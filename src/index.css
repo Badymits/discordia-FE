@@ -1,0 +1,20 @@
+/* src/index.css */
+@import "tailwindcss";
+
+@plugin 'tailwind-scrollbar';
+
+@theme {
+  --animate-alarm: alarm 0.2s ease-in-out ;
+
+  @keyframes alarm {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-4px); /* Usog pakaliwa */
+    }
+    75% {
+      transform: translateX(4px);  /* Usog pakanan */
+    }
+  }
+}
