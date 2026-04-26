@@ -136,21 +136,21 @@ const EditProfile = () => {
     if (!e.target.files?.[0]) return
     const files = e.target.files;
 
-    // 1. Safety check: Siguraduhing may files at may laman yung array
+    // Safety check: Make sure array is populated
     if (!files || files.length === 0) {
-        console.warn("No file selected or selection cancelled");
+        console.warn("No Files Detected!");
         return;
     }
 
     const file = files[0];
 
-    // 2. Type Check: Siguraduhing image talaga ang in-upload (Security & UX)
+    // Type Check: images are only allowed
     if (!file.type.startsWith("image/")) {
-        alert("Paps, image lang dapat! Huwag mo kaming i-hack.");
+        alert("Can only accept image type!");
         return;
     }
 
-    // 3. Size Check: Iwasan ang "payload too large" sa Cloudinary later (e.g., 5MB limit)
+    // Size Check
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
         alert("Masyadong mabigat 'to, pre! 5MB limit lang tayo.");
@@ -271,11 +271,6 @@ const EditProfile = () => {
                 className="bg-[#111113] focus:outline-[#7289DA] focus:outline-2 
                 text-[#ffffff] "></textarea>
             </div>
-            
-            {/* <div className="h-100 bg-gray-500 relative">
-              asdasd
-              
-            </div> */}
             
           </div>
 
