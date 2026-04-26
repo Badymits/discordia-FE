@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { useState } from "react";
+import { createRef, useState, type ChangeEvent } from "react";
 import type { 
   Category, 
-  CreateServer, 
   Server, 
+  CreateServer,
   ServerMembers 
 } from "../../types/ServerTypes"
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,8 +26,7 @@ import { IoIosArrowForward, IoMdAddCircle  } from "react-icons/io";
 import { FcGlobe } from "react-icons/fc";
 import { CiCamera } from "react-icons/ci";
 import { FiCompass } from "react-icons/fi";
-
-
+import type { ReactCropperElement } from "react-cropper";
 
 
 
@@ -48,11 +47,15 @@ const AddServerModal = ({closeModal}: any) => {
     enabled: !!user?.UserId
   })
 
-  console.log("new user: ", userData?.data)
 
   const [newServerName, setNewServerName] = useState<string>(`${userData?.data.userName}'s Server`)
   const [createServerStep, setCreateServerStep] = useState<number>(1)
   const [serverInvite, setServerInvite] = useState<string>(`${user?.userName}'s Server`)
+
+  const [imageUrl, setImageUrl] = useState<string>("") // image display (for src attribute)
+  const [imageFile, setImageFile] = useState<File>()
+
+  const cropperRef = createRef<ReactCropperElement>();
 
   //const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -356,9 +359,13 @@ const AddServerModal = ({closeModal}: any) => {
     },
   ]
 
-  const {mutateAsync: createServerMutation, isPending, isError} = useMutation({
+  const {
+    mutateAsync: createServerMutation, 
+    isPending, 
+    isError
+  } = useMutation({
     mutationKey: ["createServer"],
-    mutationFn: async (payload: CreateServer) => await createServer(payload),
+    mutationFn: async (payload: FormData) => await createServer(payload),
 
     onMutate: async (createdServer) => {
       // cancel outgoing refetches to handle newly created server
@@ -370,8 +377,8 @@ const AddServerModal = ({closeModal}: any) => {
         queryClient.setQueryData(["servers", user?.UserId], (old: Server) => [
           old,
           { 
-            serverName: createdServer.serverName,
-            serverIcon: createdServer.serverIcon
+            serverName: createdServer.get("serverName"),
+            serverIcon: imageUrl
           }
         ])
       }
@@ -383,10 +390,17 @@ const AddServerModal = ({closeModal}: any) => {
       queryClient.setQueryData(["servers", user?.UserId], context.message)
     },
 
-    onSuccess: (response) => {
+    onSuccess: (response, _variables, context) => {
 
       const serverName = response.data.serverName;
       const serverId = response.data.serverId;
+
+      if (imageUrl){
+        URL.revokeObjectURL(imageUrl)
+      }
+
+      setImageFile(undefined)
+      setImageUrl("")
 
       queryClient.invalidateQueries({ queryKey: ["servers"]})
       closeModal()
@@ -396,6 +410,43 @@ const AddServerModal = ({closeModal}: any) => {
     
   })
 
+  const handleImageInput = (e: ChangeEvent<HTMLInputElement>) => {
+
+    if (!e.target.files?.[0]){
+      console.log("No Image detected")
+      return;
+    }
+
+    const files = e.target.files
+
+    if (!files || files.length === 0){
+      console.log("No Files Detected!")
+      return;
+    }
+
+    const file = files[0];
+
+    if (!file.type.match("image/*")){
+      console.log("Can only accept image type!")
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize){
+      console.log("Cannot upload images greater than 5MB")
+      return;
+    }
+
+    const imgUrl = URL.createObjectURL(file) 
+
+    console.log("Converting to URL...", imgUrl)
+
+    setImageUrl(imgUrl)
+    setImageFile(file)
+    return;
+  }
+
+  console.log(imageUrl)
 
   const createServerService = async () => {
     console.log("craeting server...")
@@ -405,15 +456,25 @@ const AddServerModal = ({closeModal}: any) => {
       return;
     }
 
+    const formData = new FormData()
+
     const payload: CreateServer = {
       serverOwner: userData?.data.userName || "",
       serverName: newServerName,
       userId: user.UserId
     }
 
+    if (imageFile){
+      formData.append("image", imageFile)
+    }
+
+    formData.append("serverData", new Blob([JSON.stringify(payload)], {
+      type: "application/json"
+    }))
+
     console.log("payload: ", payload)
 
-    createServerMutation(payload)
+    createServerMutation(formData)
 
   }
 
@@ -581,27 +642,41 @@ const AddServerModal = ({closeModal}: any) => {
         {/* Third Step Content */}
         <div className=""> 
 
-          <div className="relative h-24 w-24 bg-transparent border-2
-            border-dashed rounded-full mx-auto flex 
-            flex-col items-center justify-center cursor-pointer">
+          <div className={`relative h-24 w-24 border-2 border-dashed
+            ${imageUrl && "border-none"} rounded-full mx-auto flex 
+            flex-col items-center justify-center cursor-pointer`}>
+            
+
+            {
+              imageUrl && (
+                <img 
+                  src={imageUrl} 
+                  alt={imageFile?.name} 
+                  className="h-24 w-26 rounded-full mt-6.5"
+                />
+              )
+            }
 
             <input 
               id="fileInput"
               type="file" 
               accept="image/*"  
-              className="opacity-0"
-              disabled={isLoading}
+              className="opacity-0 disbaled:bg-gray-800 disabled:pointer-events-none"
+              disabled={isLoading || isPending}
+              onChange={(e) => handleImageInput(e)}
             />
 
-            <label htmlFor="fileInput" className="absolute top-5 left-7 w-full 
-            cursor-pointer">
+            <label htmlFor="fileInput" className={`absolute top-4.5 w-full 
+            cursor-pointer ${imageUrl && "opacity-0"}
+            ${isPending && "pointer-events-none"}
+            `}>
 
-              <CiCamera className="text-center text-3xl"/>
-              <p className="">Upload</p>
+              <CiCamera className="text-center text-3xl w-full"/>
+              <p className="w-full text-center block mx-auto">Upload</p>
             </label>
 
-            <IoMdAddCircle className="absolute top-0 right-0 
-              text-2xl text-[#607de4] z-50"
+            <IoMdAddCircle className={`absolute top-0 right-0 
+              text-2xl text-[#607de4] z-50 ${imageUrl && "opacity-0"}`}
             />
           </div>       
 
@@ -612,10 +687,11 @@ const AddServerModal = ({closeModal}: any) => {
             <input 
               //placeholder={`Search ${server?.serverName}`}
               value={newServerName}
-              disabled={isLoading}
+              disabled={isLoading || isPending}
               onChange={(e) => setNewServerName(e.target.value)}
               className='bg-[#111113] outline-[#7289DA] focus:outline-2 capitalize 
-              text-[#ffffff] p-2  rounded-md cursor-pointer w-full'
+              text-[#ffffff] p-2  rounded-md cursor-pointer w-full 
+              disabled:pointer-events-none disabled:bg-[#111111]'
             />
 
             <p className="text-xs text-gray-400 my-3">
@@ -636,7 +712,7 @@ const AddServerModal = ({closeModal}: any) => {
         {/* Third Step button rows */}
         <div className="flex justify-between items-center">
           <button type="button" 
-            className="font-semibold cursor-pointer"
+            className="font-semibold cursor-pointer disabled:pointer-events-none"
             onClick={() => setCreateServerStep(createServerStep - 1)}
             disabled={isPending}
             >
@@ -754,8 +830,15 @@ const AddServerModal = ({closeModal}: any) => {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}  
       >
         <CgClose 
-          onClick={closeModal} 
-          className="text-2xl absolute right-2 cursor-pointer"
+          onClick={() => {
+            if (imageUrl){
+              URL.revokeObjectURL(imageUrl)
+            }
+            setImageFile(undefined)
+            closeModal()
+          }} 
+          
+          className={`text-2xl absolute right-2 cursor-pointer ${isPending && "pointer-events-none"}`}
         />
         <AnimatePresence mode="wait">
           <motion.div
