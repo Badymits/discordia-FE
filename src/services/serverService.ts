@@ -2,7 +2,6 @@ import { http } from "./httpSetup";
 import type { 
   CreateCategoryPayload, 
   CreateChannelPayload, 
-  CreateServer,
 } from "../types/ServerTypes";
 
 
@@ -17,8 +16,20 @@ export const updateUser = async(userData: FormData, userId: string) => {
   })
 } 
 
-export const createServer = async ({serverOwner, serverName, userId}: CreateServer) => {
-  return http.post('/server/create-server', {serverOwner, serverName, userId})
+export const updateServer = async(serverData: FormData, serverId: string) => {
+  return http.post(`/server/update-server/${serverId}`, serverData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  })
+}
+
+export const createServer = async (serverData: FormData) => {
+  return http.post('/server/create-server', serverData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  })
 }
 
 export const createChannel = async ({categoryId, channelName, icon}: CreateChannelPayload) => {
