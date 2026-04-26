@@ -1246,13 +1246,6 @@ const ServerComponents = () => {
 
                   <div className="flex items-center relative w-full">
                     <form action="" onSubmit={sendMessage} className="w-full">
-                      {/* <input 
-                        type="text" 
-                        value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        placeholder={`Message #${selectedChannel?.channelName}`}
-                        className="bg-transparent w-full pl-8 py-3 focus:outline-0"
-                      /> */}
                       <input 
                         type="text" 
                         ref={messageInputRef}
