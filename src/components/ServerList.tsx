@@ -1,5 +1,5 @@
 
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Tooltip } from 'react-tooltip'
 import {  useServerContext } from '../context/ServerContext';
 
@@ -23,7 +23,7 @@ const ServerList = (
     handleFunction
 }: ServerListProps) => {
 
-
+  const { serverId } = useParams()
   const { user } = useCurrentUser()
   const {
     setServer
@@ -63,6 +63,14 @@ const ServerList = (
     return navigate(`/server/${serverName}/${urlParams}`)
   }
 
+  const getInitials = (serverName: string) => {
+    return serverName
+      .trim()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .join('');
+  }
+
 
   if (isLoading) return <div>Loading Server List...</div>
 
@@ -95,23 +103,43 @@ const ServerList = (
             }}
             data-tooltip-id="my-server-tooltip" // Shared ID
             data-tooltip-content={server.serverName}
-            className='h-13.5 w-12.5 bg-white hover:bg-[#7289DA] flex 
+            className='h-13 w-13  flex 
             cursor-pointer items-center justify-center rounded-xl my-2 duration-200`
             relative group opacity-100
             '>
-
+            
+            {/* small UI that pops up when hovered */}
             <div 
               className={`absolute -left-4 w-1 bg-white rounded-r-full 
               transition-all duration-300 
               h-0 group-hover:h-5 
               /* Logic: 0 height pag normal, maliit pag hover, malaki pag active */
               /* Kung ito ang current server, gawin nating height-10 */
-              `} 
+
+              ${serverId ? "h-5 w-1.5" : ""}
+              `
+            } 
             />
             
-            {server.isAddButton ? 
-              <BiPlusCircle className='text-2xl hover:text-3xl  duration-100 text-gray-500'/> 
-              : server.serverName}
+            {/* Server Icon */}
+
+            {
+              server.serverIcon 
+              ? <img 
+                src={server.serverIcon || ""}
+                alt={server.serverName}
+                className='h-full w-full rounded-xl'
+              />
+              : <div className={`h-full w-full rounded-xl font-semibold text-white
+                duration-100 flex items-center justify-center
+
+                ${serverId === server.serverId 
+                  ? "bg-indigo-500" 
+                  : "bg-[#23272a] hover:bg-[#383c3f]"
+                }`}>
+                {getInitials(server.serverName)}
+              </div>
+            }
           </button>
         ))}
 
@@ -125,8 +153,10 @@ const ServerList = (
             relative group opacity-100'
             onClick={() => handleFunction()}
         >
-          <BiPlusCircle className='text-2xl hover:text-3xl  duration-100 text-gray-500'/> 
+          <BiPlusCircle className='text-2xl group-hover:text-white
+          duration-100 text-gray-500'/> 
         </button>
+
         <Tooltip id="my-server-tooltip" place='right' className='z-50'/>
       </div>
     </div>
