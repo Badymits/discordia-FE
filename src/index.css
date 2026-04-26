@@ -18,3 +18,21 @@
     }
   }
 }
+
+@layer components {
+  /* Gawing bilog ang crop area (Discord style) */
+  .cropper-view-box,
+  .cropper-face {
+    @apply rounded-xl border-4;
+  }
+
+  /* Palitan ang border/outline ng crop box */
+  .cropper-view-box {
+    @apply outline outline-2 outline-indigo-500;
+  }
+
+  /* Linisin ang drag handles (kung gusto mong itago) */
+  .cropper-line, .cropper-point {
+    @apply opacity-0;
+  }
+}
