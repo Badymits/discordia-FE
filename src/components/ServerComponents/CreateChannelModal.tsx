@@ -23,14 +23,14 @@ import type { IconType } from 'react-icons';
 
 interface CreateChannelModalProps{
   closeModal: () => void;
-  sectionName: string;
+  categoryName: string;
   selectedCategoryId: string;
 }
 
 const CreateChannelModal = (
   {
     closeModal,
-    sectionName,
+    categoryName,
     selectedCategoryId
   }: CreateChannelModalProps) => {
   
@@ -156,7 +156,7 @@ const CreateChannelModal = (
         <div className='text-left'>
           <div className="my-5">
             <p className="text-2xl font-bold">Create a channel</p>
-            <p className='text-gray-400'>in {sectionName}</p>
+            <p className='text-gray-400'>in {categoryName}</p>
           </div>
         </div>
 
