@@ -11,6 +11,7 @@ export interface Server {
   isAddButton?: boolean
   categories?: Category[]
   serverMembers?: ServerMembers[]
+  serverCategories?: Category[];
 }
 
 export interface CreateServer{
@@ -126,4 +127,9 @@ export interface CreateChannelPayload {
 export interface CreateCategoryPayload {
   serverId: string;
   categoryName: string;
+}
+
+export interface UpdateChannelPayload{
+  channelName: string;
+  channelTopic: string;
 }
