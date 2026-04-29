@@ -374,13 +374,14 @@ const AddServerModal = ({closeModal}: any) => {
       const previousServers = queryClient.getQueryData(["servers", user?.UserId])
 
       if (previousServers){
-        queryClient.setQueryData(["servers", user?.UserId], (old: Server) => [
-          old,
-          { 
+        queryClient.setQueryData(["servers", user?.UserId], (oldServers: Server[]) => {
+          if (!oldServers) return []
+
+          return [oldServers, {
             serverName: createdServer.get("serverName"),
-            serverIcon: imageUrl
-          }
-        ])
+            serverIcon: createdServer.get("image")
+          }]
+        })
       }
       return { previousServers }
     },
@@ -691,7 +692,7 @@ const AddServerModal = ({closeModal}: any) => {
               onChange={(e) => setNewServerName(e.target.value)}
               className='bg-[#111113] outline-[#7289DA] focus:outline-2 capitalize 
               text-[#ffffff] p-2  rounded-md cursor-pointer w-full 
-              disabled:pointer-events-none disabled:bg-[#111111]'
+              disabled:pointer-events-none disabled:bg-gray-950'
             />
 
             <p className="text-xs text-gray-400 my-3">
@@ -724,7 +725,7 @@ const AddServerModal = ({closeModal}: any) => {
             disabled={isPending}
             className="font-semibold cursor-pointer duration-100
             bg-[#607de4] hover:bg-[#7289DA] p-2 rounded-md 
-            disabled:bg-[#8fa5f3] disabled:pointer-events-none">
+            disabled:bg-[#345df0] disabled:pointer-events-none">
             Create
           </button>
         </div>
