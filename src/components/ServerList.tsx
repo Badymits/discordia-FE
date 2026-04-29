@@ -116,7 +116,7 @@ const ServerList = (
               /* Logic: 0 height pag normal, maliit pag hover, malaki pag active */
               /* Kung ito ang current server, gawin nating height-10 */
 
-              ${serverId ? "h-5 w-1.5" : ""}
+              ${serverId === server.serverId ? "h-5 w-1.5" : ""}
               `
             } 
             />
@@ -128,10 +128,10 @@ const ServerList = (
               ? <img 
                 src={server.serverIcon || ""}
                 alt={server.serverName}
-                className='h-full w-full rounded-xl'
+                className='h-full w-full rounded-xl object-cover'
               />
               : <div className={`h-full w-full rounded-xl font-semibold text-white
-                duration-100 flex items-center justify-center
+                duration-100 flex items-center justify-center hover:bg-indigo-400
 
                 ${serverId === server.serverId 
                   ? "bg-indigo-500" 
