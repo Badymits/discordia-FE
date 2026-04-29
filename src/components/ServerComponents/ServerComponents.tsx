@@ -14,6 +14,7 @@ import { FaSearch, FaEllipsisH, FaFolderPlus } from "react-icons/fa";
 import { TiPin } from "react-icons/ti";
 import { GiFilmSpool } from "react-icons/gi";
 import { FiPlus } from "react-icons/fi";
+import { CgClose } from "react-icons/cg"
 import { 
   IoIosNotifications,
   //IoIosNotificationsOff 
@@ -45,6 +46,7 @@ import {
 } from "../../query/serverQueries";
 import { uploadImage } from "../../services/serverService";
 import ServerSettings from "./ServerSettings";
+import ChannelSettings from "./ChannelSettings";
 
 interface PayloadTest{
   formData: FormData;
@@ -81,8 +83,10 @@ const ServerComponents = () => {
   const [createCategoryModal, setCreateCategoryModal] = useState<boolean>(false)
   const [openServerSettingsPanel, setOpenServerSettingsPanel] = useState<boolean>(false)
   const [openServerSettings, setOpenServerSettings] = useState<boolean>(false)
+  const [openChannelSettings, setOpenChannelSettings] = useState<boolean>(false)
+  const [openChannelTopic, setOpenChannelTopic] = useState<boolean>(false)
 
-  const [sectionName, setSectionName] = useState<string>("")
+  const [categoryName, setCategoryName] = useState<string>("")
   const [categoryId, setCategoryId] = useState<string | undefined>("")
   const [messageOptionsPanel, setMessageOptionsPanel] = useState(false)
 
@@ -122,7 +126,10 @@ const ServerComponents = () => {
     fetchStatus 
   } = useQuery({
     ...fetchServer(serverId || ""),
-    enabled: !!serverId
+    enabled: !!serverId,
+    retry: 1, 
+    staleTime: 0, 
+    gcTime: 0,
   })
 
   // 1. EFFECT PARA SA SERVER SWITCH (Reset Logic)
@@ -244,8 +251,9 @@ const ServerComponents = () => {
       // returns mutattion to idle state
       reset();
     },
-  })
+  })  
 
+  console.log("the server: ", serverChannels)
   console.log("the channel: ", selectedChannel)
   console.log("Fetched messages from query: ", channelMessages)
 
@@ -266,8 +274,7 @@ const ServerComponents = () => {
     avatar: ""
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [currentUser, setCurrentUser] = useState<ServerMembers>(() => {
+  const [currentUser] = useState<ServerMembers>(() => {
     const userObj = sessionStorage.getItem("UserObj")
     const user = userObj ? JSON.parse(userObj) : null
     
@@ -313,6 +320,8 @@ const ServerComponents = () => {
   const scrollToBottom = () => {
     latestMessage.current?.scrollIntoView({ behavior: "auto" }); 
   };
+
+  console.log(selectedChannel?.channelName)
 
   const handleInputFileRefClick = () => {
     if (!inputFileRef.current) return;
@@ -560,7 +569,11 @@ const ServerComponents = () => {
           // filter messages in the spread operator to prevent double messages from sending.
           // this is to ensure that the setQueryData located in uploadImageMutation pushes through 
           // without disrupting this process.
-          return [...oldMessages.filter(m => m.messageId !== message.messageId), message]; // then append new message at the end
+          return [
+            ...oldMessages.filter(
+              m => m.messageId !== message.messageId), 
+              message // then append new message at the end
+            ]; 
           
         })
       })
@@ -741,12 +754,26 @@ const ServerComponents = () => {
     return difference
   }
 
-  // console.log("activated channel No: ", activeChannel)
-  // console.log("selected server channels: ", serverChannels)
-  console.log("Img list container: ", imgList.length)
+  // sets active channel to general when other channels have been deleted
+  const selectOnChannelDelete = () => {
+    const generalChannel = serverChannels?.serverCategories[0]?.categoryChannels[0]
+    if (generalChannel){
+      setActiveChannel(
+        generalChannel.channelId
+      )
+    } else {
+      setActiveChannel("")
+    }
+  }
 
   if (isLoading){
     return <div className="flex h-screen items-center justify-center">Loading Server...</div>;
+  }
+
+  if (status === "pending" || fetchStatus === "fetching"){
+    return <div className="h-screen bg-blue-400 w-full">
+      Hold on mga bossing
+    </div>
   }
 
   return (
@@ -826,6 +853,7 @@ const ServerComponents = () => {
                         className="group-hover:-rotate-90 duration-150"/>
                     </div>
                     
+                    {/* Add Channel In Category Icon */}
                     {/* Should only be visible if server owner */}
                     <IoMdAdd 
                       className="mr-2 text-[16px]"
@@ -834,7 +862,7 @@ const ServerComponents = () => {
                       onClick={() => {
                         setCreateChannelModal(true)
                         setCategoryId(list.categoryId)
-                        setSectionName(list.categoryName)
+                        setCategoryName(list.categoryName)
                       }}
                     />
 
@@ -890,6 +918,10 @@ const ServerComponents = () => {
                               data-tooltip-id="channel-settings"
                               data-tooltip-content="Edit Channel"
                               className="text-xl"
+                              onClick={() => {
+                                setCategoryName(list.categoryName)
+                                setOpenChannelSettings(true)
+                              }}
                             />
                             <AiOutlineUsergroupAdd 
                               data-tooltip-id="channel-invite"
@@ -950,6 +982,9 @@ const ServerComponents = () => {
         </div>
       </div>
       
+      {/* Content: If user is in VOICE CHAT, show voice chat content.
+          ELSE: show message container
+      */}
       {
         selectedChannel?.channelType === "voice" ?
         <div className="bg-[#111118] h-full w-full relative">
@@ -1000,9 +1035,26 @@ const ServerComponents = () => {
             <div className=" border-b border-[#363c41] w-full p-2.75">
 
               <div className="flex items-center justify-between">
-                <div className="font-semibold flex items-center gap-1">
-                  {iconMap[selectedChannel?.icon as keyof typeof iconMap]}
-                  {selectedChannel?.channelName}
+                <div className="font-semibold flex items-center justify-center">
+                  <div className="flex items-center">
+                    {iconMap[selectedChannel?.icon as keyof typeof iconMap]}
+                    {selectedChannel?.channelName}
+                    
+                  </div>
+                  {
+                    selectedChannel?.channelTopic && <span className="h-1 w-1 rounded-full mx-2 bg-gray-600"></span>
+                  }
+                  
+                  {
+                    selectedChannel?.channelTopic && (
+                      <p 
+                        onClick={() => setOpenChannelTopic(true)}
+                        className="text-gray-400 text-sm cursor-pointer">
+                          {selectedChannel?.channelTopic}
+                      </p>
+                    )
+                  }
+                  
                 </div>
 
                 <div className="flex items-center text-2xl gap-6">
@@ -1455,7 +1507,7 @@ const ServerComponents = () => {
           >
             <CreateChannelModal 
               closeModal={handleCreateChannelModal}
-              sectionName={sectionName}
+              categoryName={categoryName}
               selectedCategoryId={categoryId || ""}
             />
           </div>
@@ -1493,6 +1545,51 @@ const ServerComponents = () => {
               )}
               serverName={serverChannels?.serverName || "Server"}
             />
+          </div>
+        )
+      }
+
+      {
+        openChannelSettings && (
+          <div className="fixed inset-0 h-full w-full z-99">
+            <ChannelSettings 
+              closeModal={() => {
+                setOpenChannelSettings(!openChannelSettings)
+              }}
+              onChannelDelete={selectOnChannelDelete}
+              channelId={activeChannel || ""}
+              channelName={selectedChannel?.channelName || ""}
+              categoryName={categoryName || ""}
+            />
+          </div>
+        )
+      }
+      {
+        openChannelTopic && (
+          <div className="fixed inset-0 h-full w-full bg-black/60 z-99 shadow-2xl
+            flex items-center justify-center">
+
+            <div className="w-120 h-50 bg-[#2B2D31] p-6 absolute rounded-md text-white text-2xl">
+              <div className="flex items-center justify-between w-full font-semibold">
+
+                <div>
+                  <p>Channel Topic</p>
+                  <p className="flex items-center text-gray-400 gap-2 text-lg">
+                    {iconMap[selectedChannel?.icon as keyof typeof iconMap]}
+                    {selectedChannel?.channelName}
+                  </p>
+                </div>
+                
+                <CgClose 
+                  className="cursor-pointer mb-8"
+                  onClick={() => setOpenChannelTopic(false)}
+                />
+              </div>
+
+              <div className="mt-12">
+                {selectedChannel?.channelTopic}
+              </div>
+            </div>
           </div>
         )
       }
