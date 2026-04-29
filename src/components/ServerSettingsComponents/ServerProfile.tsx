@@ -293,7 +293,17 @@ const ServerProfile = () => {
             type="button"
             className="bg-[#4567df] hover:bg-[#4e69ca] duration-100 p-1 rounded-md 
             mt-2 text-sm cursor-pointer"
-            onClick={() => handleInputRefClick()}
+            onClick={() => {
+
+              // immediately opens up image edit modal instead of uploading a new image 
+              if (serverData?.serverIcon){
+                setImageCrop(serverData?.serverIcon)
+                setOpenImageEditModal(true)
+              } else {
+                handleInputRefClick()
+              }
+              
+            }}
             >
               Change Server Icon
           </button>
@@ -484,25 +494,40 @@ const ServerProfile = () => {
                   {/* Edit Image options */}
                 <div className='w-full flex items-center justify-between'>
                   
-                  <button
-                    type='button'
-                    onClick={() => {
-                      const cropper = cropperRef.current?.cropper
+                  <div className='flex items-center gap-2'>
+                    {
+                      serverData?.serverIcon && (
+                        <button
+                          type='button'
+                          className='bg-indigo-500 hover:bg-indigo-400 duration-100  
+                          py-2 px-4 rounded-md mx-2'
+                          onClick={() => handleInputRefClick()}
+                        >
+                          Change Icon
+                        </button>
+                      )
+                    }
+                    <button
+                        type='button'
+                        onClick={() => {
+                          const cropper = cropperRef.current?.cropper
 
-                      if (cropper) {
-                        cropper.reset()
-                        setValue(cropper.getData().scaleX || 0.1)
-                      }
-                      
-                    }}
-                    className='text-indigo-500 hover:underline text-xl cursor-pointer
-                      disabled:text-indigo-800 disabled:pointer-events-none
-                      font-semibold 
-                    '
-                    disabled={value === 0.1 || isLoading}
-                  >
-                    Reset
-                  </button>
+                          if (cropper) {
+                            cropper.reset()
+                            setValue(cropper.getData().scaleX || 0.1)
+                          }
+                          
+                        }}
+                        className='text-indigo-500 hover:underline text-xl cursor-pointer
+                          disabled:text-indigo-800 disabled:pointer-events-none
+                          font-semibold 
+                        '
+                        disabled={value === 0.1 || isLoading}
+                      >
+                        Reset
+                    </button>
+                  </div>
+                  
 
 
                   <div className='font-semibold'>
@@ -513,7 +538,8 @@ const ServerProfile = () => {
                         setHasChanges(false)
                         setOpenImageEditModal(false)
                       }}
-                      className='bg-[#363c41] py-2 px-4 rounded-md mx-2
+                      className='bg-[#363c41] hover:bg-[#464e55] duration-100 py-2 
+                          px-4 rounded-md mx-2 cursor-pointer
                         disabled:bg-[#1a1b1d] disabled:text-gray-700
                       '
                       disabled={isLoading}
@@ -528,7 +554,8 @@ const ServerProfile = () => {
                         setHasChanges(true)
                         handleConfirmCrop()
                       }}
-                      className='bg-indigo-500 py-2 px-4 rounded-md mx-2'>
+                      className='bg-indigo-500 hover:bg-indigo-400 duration-100 
+                      py-2 px-4 rounded-md mx-2 cursor-pointer'>
                       Apply
                     </button>
                   </div>
@@ -555,6 +582,16 @@ const ServerProfile = () => {
               cursor-pointer mx-6 disabled:text-[#0c132c]"
               onClick={() => {
                 setHasChanges(false)
+
+                // only revert to prev icon if THERE WAS
+                if (serverData?.serverIcon){
+                  setImagePreview(serverData?.serverIcon)
+                }
+
+                if (serverNameInputRef.current) {
+                  serverNameInputRef.current.value = serverData?.serverName ?? ""
+                }
+                setTextDescription("")
               }} 
               >
                 Reset
