@@ -1,7 +1,8 @@
 import { http } from "./httpSetup";
 import type { 
   CreateCategoryPayload, 
-  CreateChannelPayload, 
+  CreateChannelPayload,
+  UpdateChannelPayload, 
 } from "../types/ServerTypes";
 
 
@@ -22,6 +23,10 @@ export const updateServer = async(serverData: FormData, serverId: string) => {
       "Content-Type": "multipart/form-data"
     }
   })
+}
+
+export const updateChannel = async(channelData: UpdateChannelPayload, channelId: string) => {
+  return http.post(`/channels/update/${channelId}`, channelData)
 }
 
 export const createServer = async (serverData: FormData) => {
@@ -60,6 +65,10 @@ export const getServer = async(serverId: string) => {
   return http.get(`/server/${serverId}`)
 }
 
+export const getString = async() => {
+  return http.get(`/server/get-string`)
+}
+
 export const getServersByUserId = async(userId: string | number) => {
   return http.get(`/server/list/${userId}`)
 }
@@ -73,3 +82,12 @@ export const getMessagesByChannelId = async(channelId: string | number) => {
 }
 
 // =========================
+
+
+// ====== DELETE METHODS ======
+
+export const deleteChannel = async(channelId: string) => {
+  return http.delete(`/channels/${channelId}`)
+}
+
+// ============================
