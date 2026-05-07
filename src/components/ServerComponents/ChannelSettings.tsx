@@ -4,7 +4,7 @@ import { IoIosCloseCircleOutline } from "react-icons/io";
 import {  RiDeleteBinLine  } from "react-icons/ri";
 import { CgClose } from "react-icons/cg"
 
-import OverviewComponent from "../ChannelSettingsComponents/OverviewComponent";
+import ChannelOverview from "../ChannelSettingsComponents/ChannelOverview";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteChannel } from "../../services/serverService";
 import { useParams } from "react-router-dom";
@@ -53,7 +53,7 @@ const CHANNEL_TAB_COMPONENT: Record<string, React.ComponentType<{
   channelId: string, 
   setChannelNameState: React.Dispatch<SetStateAction<string>>}
   >> = {
-  overview: OverviewComponent,
+  overview: ChannelOverview,
 
 }
 
