@@ -4,13 +4,21 @@ import {
   getMessagesByChannelId,
   getServer,
   getServersByUserId, 
-  getUser
+  getUser,
+  getUsers
 } from "../services/serverService";
 
 export const fetchUser = (userId: string) => {
 	return queryOptions({
 		queryKey: ["user", userId],
 		queryFn: () => getUser(userId)
+	})
+}
+
+export const fetchUsers = (searchTerm: string, userId: string) => {
+	return queryOptions({
+		queryKey: ["searchedUsers"],
+		queryFn: () => getUsers(searchTerm, userId)
 	})
 }
 
