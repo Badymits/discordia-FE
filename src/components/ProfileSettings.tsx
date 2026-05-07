@@ -146,7 +146,9 @@ const ProfileSettings = ( {closeSettings}: any) => {
             
 
             <div>
-              <h2 className='text-xl font-semibold'>{userData?.data.userName}</h2>
+              <p className='text-xl font-semibold'>
+                {userData?.data.username || userData?.data.displayName}
+              </p>
               <p className='font-light cursor-pointer hover:underline'>Edit Profile</p>
             </div>
           </div>
