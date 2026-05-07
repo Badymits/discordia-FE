@@ -161,7 +161,7 @@ const Layout = () => {
       </div>
 
       { openProfileSettings && (
-          <div className='fixed inset-0 bg-black/80  z-50 
+          <div className='fixed inset-0 bg-black/80  z-999 
           flex items-center justify-center'>
             <ProfileSettings closeSettings={closeProfileSettings} />
           </div>
