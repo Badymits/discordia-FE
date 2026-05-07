@@ -61,7 +61,7 @@ export interface ServerMembers {
   serverNickname?: string;
   imgUrl?: string;
 
-  userTag: string;
+  userTag?: string;
   avatar?: string;
   bio?: string;
   active?: boolean;
