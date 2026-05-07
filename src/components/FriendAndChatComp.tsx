@@ -377,7 +377,7 @@ const FriendAndChatComp = ({
     <div className='bg-[#23272a] flex-1 border-r border-[#363c41]'>
 
       {/* Friend Options btns */}
-      <div className='flex mb-3 items-center gap-4 py-3 text-white border-b border-[#363c41] '>
+      <div className='flex mb-3 items-center gap-4 p-3 text-white border-b border-[#363c41] '>
 
         <p className='text-2xl'>
           <FaUserFriends className='inline mx-1'/>
