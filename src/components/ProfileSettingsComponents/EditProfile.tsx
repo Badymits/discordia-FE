@@ -33,7 +33,7 @@ const EditProfile = () => {
   const [userDisplayValues, setUserDisplayValues] = useState<User>(
     {
       UserId: fetchedUserData?.data.UserId,
-      userName: fetchedUserData?.data.userName,
+      username: fetchedUserData?.data.username,
       displayName: fetchedUserData?.data.displayName,
       email: fetchedUserData?.data.email,
       Firstname: "",
@@ -111,7 +111,7 @@ const EditProfile = () => {
     const userPayload: UserPayload = {
       UserId: userDisplayValues.UserId,
       displayName: userDisplayValues.displayName || "",
-      userName: userDisplayValues.userName,
+      username: userDisplayValues.username,
       userBio: userDisplayValues.bio || "",
       email: userDisplayValues.email || "",
       imgUrl: userDisplayValues.imgUrl || ""
@@ -227,9 +227,9 @@ const EditProfile = () => {
               </label>
               <input 
                   type="text"
-                  value={userDisplayValues.userName || ""} 
+                  value={userDisplayValues.username || ""} 
                   onChange={(e) => {
-                    setHasChanges(user?.userName !== e.target.value);
+                    setHasChanges(user?.username !== e.target.value);
                     setUserDisplayValues((prev) => ({
                       ...prev,
                       userName: e.target.value
@@ -341,7 +341,7 @@ const EditProfile = () => {
                   type="text" 
                   readOnly
                   className="bg-transparent pointer-events-none"
-                  value={userDisplayValues.userName}
+                  value={userDisplayValues.username}
                   />
               </p>
               

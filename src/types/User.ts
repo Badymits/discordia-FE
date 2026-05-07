@@ -25,7 +25,7 @@ export interface ServerUser{
 export interface UserPayload{
   UserId: string;
   displayName: string;
-  userName: string;
+  username: string;
   userBio: string;
   email: string;
   imgUrl: string | File;
