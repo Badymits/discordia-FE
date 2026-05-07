@@ -121,7 +121,7 @@ const ProfileSettings = ( {closeSettings}: any) => {
   ]
   return (
     <div className='flex w-350 h-195 mx-5
-      shadow-2xl animate-in fade-in duration-200 text-white '>
+      shadow-2xl animate-in fade-in duration-200 text-white z-999'>
         
       <div className=' bg-[#202122] w-70 p-4 shrink-0 
       rounded-l-2xl text-sm overflow-auto scrollbar-thin
