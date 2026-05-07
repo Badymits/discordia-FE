@@ -105,7 +105,7 @@ const CreateCategoryModal = ({
         <div className="mt-2 p-4">
           <p>Category Name</p>
           <input 
-            placeholder={`new-channel`}
+            placeholder={`new-category`}
             value={categoryName}
             onChange={(e) => formatCategoryName(e.target.value)}
             className='bg-[#111113] outline-[#7289DA] focus:outline-2 
