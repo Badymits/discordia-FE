@@ -6,7 +6,6 @@ export interface User{
   Lastname: string;
   displayName?: string;
   username: string;
-  Password?: string;
   email: string;
   imgUrl?: string;
   userTag?: string;
@@ -29,4 +28,14 @@ export interface UserPayload{
   userBio: string;
   email: string;
   imgUrl: string | File;
+}
+
+export interface RegisterForm {
+    firstname: string;
+    lastname: string;
+    email: string
+    username: string;
+    displayName: string;
+    password: string
+    confirmPassword?: string
 }
