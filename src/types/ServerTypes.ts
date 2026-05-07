@@ -9,7 +9,6 @@ export interface Server {
   members: number; // will be removed lmao
   serverIcon?: string;
   isAddButton?: boolean
-  categories?: Category[]
   serverMembers?: ServerMembers[]
   serverCategories?: Category[];
 }
@@ -53,15 +52,21 @@ export interface Category {
 }
 
 export interface ServerMembers {
-  id: string;
-  user: string;
-  userName: string;
+  memberId: string;
+
+  user?: User;
+
+  username: string;
   displayName: string;
+  serverNickname?: string;
+  imgUrl?: string;
+
   userTag: string;
   avatar?: string;
   bio?: string;
   active?: boolean;
   addedFriend?: boolean;
+
   status?: string;
   nowPlaying?: string;
   inGame?: boolean;
@@ -82,12 +87,21 @@ export interface Message {
   displayName: string;
 
   message: string;
+  repliedTo?: ReplyMessage;
   messageImgUrl?: string;
   dateTimestamp?: string; // data type is converted in the backend
   messageTag?: MessageTag;
 
   isReply?: boolean;
   isContentWithImg?: boolean;
+}
+
+export interface ReplyMessage {
+  messageId: string;
+  message: string;
+  userId: string;
+  displayName: string;
+  imgUrl?: string;
 }
 
 export interface MessageTag { 
