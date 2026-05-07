@@ -93,7 +93,7 @@ const EditProfile = () => {
       console.log("Updated Information Successfully!")
       queryClient.invalidateQueries({queryKey: ["user", user?.UserId]})
     },
-    onError: (err, newFormData, context) => {
+    onError: (err, _newFormData, context) => {
       console.log("An Error Occurred while updating profile.", err)
 
       if (context?.previousUserData){
