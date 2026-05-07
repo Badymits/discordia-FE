@@ -6,11 +6,6 @@ import type { IconType } from 'react-icons';
 import { HiHashtag, HiLockClosed } from "react-icons/hi";
 import { FaSearch } from "react-icons/fa";
 import { PiWarningCircleFill } from "react-icons/pi";
-
-import { 
-  serverMembers, 
-  serverTwoMembers 
-} from "../utils/DummyData";
 import type { Channel, ServerMembers } from "../types/ServerTypes";
 
 
@@ -29,30 +24,71 @@ const InviteToServer = ({
 }: InviteToServerProps ) => {
 
   const combinedMembers: ServerMembers[] = useMemo(() => [
-    ...serverMembers, 
-    ...serverTwoMembers,
+
     {
-      id: 33,
-      user: "that333",
-      userTag: "Im3",
+      memberId: "33",
+      displayName: "that333",
+      username: "Im3",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=15",
     },
     {
-      id: 67,
-      user: "sixorSEVEEEEEN",
-      userTag: "67676767",
+      memberId: "67",
+      displayName: "sixorSEVEEEEEN",
+      username: "67676767",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=67",
     },
     {
-      id: 29,
-      user: "oldSchool baby",
-      userTag: "you_know_what",
+      memberId: "29",
+      displayName: "oldSchool baby",
+      username: "you_know_what",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=27",
     },
     {
-      id: 49,
-      user: "Terry Crews",
-      userTag: "D_Latrell",
+      memberId: "49",
+      displayName: "Terry Crews",
+      username: "D_Latrell",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=47",
+    },
+    {
+      memberId: "59",
+      displayName: "Terry Crews",
+      username: "D_Latrell",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=47",
+    },
+    {
+      memberId: "4",
+      displayName: "Terry Crews",
+      username: "D_Latrell",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=47",
+    },
+    {
+      memberId: "9",
+      displayName: "Terry Crews",
+      username: "D_Latrell",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=47",
+    },
+    {
+      memberId: "69",
+      displayName: "Terry Crews",
+      username: "D_Latrell",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=47",
+    },
+    {
+      memberId: "799",
+      displayName: "Terry Crews",
+      username: "D_Latrell",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=47",
+    },
+    {
+      memberId: "149",
+      displayName: "Terry Crews",
+      username: "D_Latrell",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=47",
+    },
+    {
+      memberId: "349",
+      displayName: "Terry Crews",
+      username: "D_Latrell",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=47",
     },
   ], [])
@@ -62,8 +98,8 @@ const InviteToServer = ({
 
   const filteredMembers = useMemo(() => {
     return combinedMembers.filter((member) => 
-      member.user.toLowerCase().includes(searchInput.toLowerCase()) || 
-      member.userTag.toLowerCase().includes(searchInput.toLowerCase())
+      member?.username.toLowerCase().includes(searchInput.toLowerCase()) || 
+      member.displayName.toLowerCase().includes(searchInput.toLowerCase())
     )
   }, [searchInput, combinedMembers])
 
@@ -146,14 +182,14 @@ const InviteToServer = ({
                   <div className="flex flex-1 items-center gap-2">
                     <img 
                       src={member.avatar} 
-                      alt={member.user} 
+                      alt={member.user?.username} 
                       className="h-8 w-8 rounded-full bg-gray-100"
                     />
                     <div className="flex flex-col">
-                      <p className="font-semibold">{member.user}</p>
+                      <p className="font-semibold">{member.displayName}</p>
                       
                       <p className="text-xs text-gray-400">
-                        {member.userTag}
+                        {member.username}
                       </p>
                     </div>
                   </div>
