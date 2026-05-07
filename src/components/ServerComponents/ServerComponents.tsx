@@ -284,8 +284,8 @@ const ServerComponents = () => {
     serverNickname: "",
     displayName: "",
     username: "",
-    userTag: "",
-    avatar: ""
+    bio: "",
+    imgUrl: ""
   })
 
   const [currentUser] = useState<ServerUser>(() => {
@@ -1599,8 +1599,8 @@ const ServerComponents = () => {
                         serverNickname: member.serverNickname,
                         username: member.user?.username || "",
                         displayName: member.user?.displayName || "",
-                        userTag: member.userTag,
-                        avatar: member.avatar
+                        bio: member.bio,
+                        imgUrl: member.imgUrl
                       })}>
                       
                       {
@@ -1665,12 +1665,12 @@ const ServerComponents = () => {
                               }
                               
 
-                              <p className="text-lg font-semibold">
+                              <p className="text-xl font-semibold text-white pl-2">
                                 {serverMemberDetails.serverNickname}
                               </p>
 
-                              <p className="text-sm">
-                                {serverMemberDetails.user?.username}
+                              <p className="text-sm pl-2 font-light">
+                                {serverMemberDetails.username}
                               </p>
                               
                               {/* Should be visible only to admin */}
@@ -1685,7 +1685,7 @@ const ServerComponents = () => {
                               <input 
                                 type="text" 
                                 className="w-full bg-[#383a40] p-2" 
-                                placeholder={`Message @${serverMemberDetails.user}`}
+                                placeholder={`Message @${serverMemberDetails.serverNickname}`}
                               />
                             </div>
                           </div>
