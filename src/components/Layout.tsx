@@ -138,7 +138,7 @@ const Layout = () => {
                 {
                   isHovered 
                   ? `${userData?.data.displayName}`
-                  : `${userData?.data.userName}`
+                  : `${userData?.data.username}`
                 }
               </div>
             </div>
