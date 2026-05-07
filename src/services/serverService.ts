@@ -29,6 +29,10 @@ export const updateChannel = async(channelData: UpdateChannelPayload, channelId:
   return http.post(`/channels/update/${channelId}`, channelData)
 }
 
+export const updateCategory = async(categoryName: string, categoryId: string) => {
+  return http.post(`/category/update/${categoryId}`, categoryName)
+}
+
 export const createServer = async (serverData: FormData) => {
   return http.post('/server/create-server', serverData, {
     headers: {
@@ -61,6 +65,15 @@ export const getUser = async(userId: string) => {
   return http.get(`/users/${userId}`)
 }
 
+export const getUsers = async(searchTerm: string, userId: string) => {
+  return http.get(`/users/search-users`, {
+    params: {
+      searchTerm: searchTerm,
+      userId: userId
+    }
+  })
+}
+
 export const getServer = async(serverId: string) => {
   return http.get(`/server/${serverId}`)
 }
@@ -88,6 +101,10 @@ export const getMessagesByChannelId = async(channelId: string | number) => {
 
 export const deleteChannel = async(channelId: string) => {
   return http.delete(`/channels/${channelId}`)
+}
+
+export const deleteCategory = async(categoryId: string) => {
+  return http.delete(`/category/${categoryId}`)
 }
 
 // ============================
