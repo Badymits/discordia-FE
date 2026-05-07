@@ -1,15 +1,15 @@
-import { useContext, useState, useRef, useEffect, type ChangeEvent } from "react";
-import { ServerContext, useServerContext } from "../../context/ServerContext";
+import { useContext, useState, useRef, useEffect, type ChangeEvent, type MouseEvent } from "react";
+import { ServerContext } from "../../context/ServerContext";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4, type UUIDTypes } from "uuid";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Tooltip } from "react-tooltip";
 
 import { AiOutlineUsergroupAdd, AiOutlineAudioMuted } from "react-icons/ai";
 import { RiArrowDownSLine, RiFileUploadLine } from "react-icons/ri";
 import { RiHashtag, RiDeleteBinLine  } from "react-icons/ri";
 import { CiSettings } from 'react-icons/ci'
-import { IoMdAdd, IoMdAddCircle } from "react-icons/io";
-import { Tooltip } from "react-tooltip";
+import { IoMdAdd, IoMdAddCircle, IoMdCloseCircleOutline  } from "react-icons/io";
 import { FaSearch, FaEllipsisH, FaFolderPlus } from "react-icons/fa";
 import { TiPin } from "react-icons/ti";
 import { GiFilmSpool } from "react-icons/gi";
@@ -34,6 +34,7 @@ import type {
   Channel, 
   Message, 
   MessageFileState,
+  ReplyMessage,
   ServerMembers 
 } from "../../types/ServerTypes";
 
@@ -47,6 +48,10 @@ import {
 import { uploadImage } from "../../services/serverService";
 import ServerSettings from "./ServerSettings";
 import ChannelSettings from "./ChannelSettings";
+import ServerComponentLoader from "../LoadingComponents/ServerComponentLoader";
+import CategorySettings from "../CategorySettingsComponents/CategorySettings"
+import { CategorySettingsMenu } from "../../utils/PanelSettings";
+import type { ServerUser, User } from "../../types/User";
 
 interface PayloadTest{
   formData: FormData;
@@ -85,12 +90,23 @@ const ServerComponents = () => {
   const [openServerSettings, setOpenServerSettings] = useState<boolean>(false)
   const [openChannelSettings, setOpenChannelSettings] = useState<boolean>(false)
   const [openChannelTopic, setOpenChannelTopic] = useState<boolean>(false)
+  const [openCategorySettings, setOpenCategorySettings] = useState<boolean>(false)
 
   const [categoryName, setCategoryName] = useState<string>("")
   const [categoryId, setCategoryId] = useState<string | undefined>("")
   const [messageOptionsPanel, setMessageOptionsPanel] = useState(false)
 
   const [imgList, setImgList] = useState<MessageFileState[]>([])
+  const [replyMessageObject, setReplyMessageObject] = useState<ReplyMessage>({
+    messageId: "",
+    message: "",
+    userId: "",
+    displayName: "",
+    imgUrl: ""
+  })
+
+  const [showCategorySettings, setShowCategorySettings] = useState(false)
+  const [panelCoords, setPanelCoords] = useState({x: 0, y: 0})
 
   const { 
     isInVoice,
@@ -104,10 +120,6 @@ const ServerComponents = () => {
     unsubscribe,
     isConnected
   } = useWebSocketContext()
-
-  const { 
-    serverMembers
-  } = useServerContext()
 
   const serverContext = useContext(ServerContext)
 
@@ -128,8 +140,8 @@ const ServerComponents = () => {
     ...fetchServer(serverId || ""),
     enabled: !!serverId,
     retry: 1, 
-    staleTime: 0, 
-    gcTime: 0,
+    staleTime: 1000 * 60 * 5, 
+    gcTime: 1000 * 60 * 5,
   })
 
   // 1. EFFECT PARA SA SERVER SWITCH (Reset Logic)
@@ -185,6 +197,7 @@ const ServerComponents = () => {
     ),
     enabled: !!activeChannel,
     staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 5,
   })
 
   const {
@@ -254,6 +267,7 @@ const ServerComponents = () => {
   })  
 
   console.log("the server: ", serverChannels)
+  console.log("general channel members: ", serverChannels?.serverMembers)
   console.log("the channel: ", selectedChannel)
   console.log("Fetched messages from query: ", channelMessages)
 
@@ -266,35 +280,33 @@ const ServerComponents = () => {
   });
 
   const [serverMemberDetails, setServerMemberDetails] = useState<ServerMembers>({
-    id: "",
-    user: "",
+    memberId: "",
+    serverNickname: "",
     displayName: "",
-    userName: "",
+    username: "",
     userTag: "",
     avatar: ""
   })
 
-  const [currentUser] = useState<ServerMembers>(() => {
+  const [currentUser] = useState<ServerUser>(() => {
     const userObj = sessionStorage.getItem("UserObj")
     const user = userObj ? JSON.parse(userObj) : null
     
     // just returning random user with default values
     if (user === null) return {
-      id: "100",
-      user: "user",
+      userId: "100",
       displayName: "display name user",
-      userName: "userName",
-      userTag: "userTag",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=100"
+      username: "userName",
+      bio: "userTag",
+      imgUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=100"
     }
     
     return {
-      id: user.userId,
-      user: user,
+      userId: user.userId,
       displayName: user.displayname,
-      userName: user.userName,
-      userTag: user.username,
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=45",
+      username: user.userName,
+      bio: "",
+      imgUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=45",
 
     }
   })
@@ -315,6 +327,8 @@ const ServerComponents = () => {
   const serverSettingsPanel = useRef<HTMLDivElement>(null!)
 
   const messageInputRef = useRef<HTMLInputElement>(null)
+
+  const replyMessageRef = useRef<HTMLDivElement>(null);
 
   // on channel change, automatically position view to latest message of channel
   const scrollToBottom = () => {
@@ -451,16 +465,17 @@ const ServerComponents = () => {
 
   // handles the member panel on the right side of the page when hovering over server members
   useEffect(() => {
-    const handleMemberPanelClick = (event: MouseEvent) => {
+    const handleMemberPanelClick = (event: Event) => {
+      const mouseEvent = event as globalThis.MouseEvent;
       if ((memberPanel.current && 
-            !memberPanel.current.contains(event.target as Node)) ||
+            !memberPanel.current.contains(mouseEvent.target as Node)) ||
           (memberPanelSetting.current 
-            && memberPanelSetting.current.contains(event.target as Node))) {
+            && memberPanelSetting.current.contains(mouseEvent.target as Node))) {
         setServerMemberDetails({
-          id: "0",
-          user: "",
+          memberId: "0",
+          user: {} as User,
           displayName: "",
-          userName:"",
+          username:"",
           userTag: "",
           avatar: ""
         })
@@ -480,9 +495,10 @@ const ServerComponents = () => {
   // handles the server settings panel div
   useEffect(() => {
 
-    const handleServerSettingsPanelClick = (event:MouseEvent) => {
+    const handleServerSettingsPanelClick = (event:Event) => {
+      const mouseEvent = event as globalThis.MouseEvent;
       if (serverSettingsPanel.current && 
-          !serverSettingsPanel.current.contains(event.target as Node)){
+          !serverSettingsPanel.current.contains(mouseEvent.target as Node)){
         setOpenServerSettingsPanel(false)
       }
     }
@@ -495,6 +511,21 @@ const ServerComponents = () => {
         handleServerSettingsPanelClick)
     }
   },[])
+
+  useEffect(() => {
+    const handleContextMenuClick = () => {
+      //const mouseEvent = event as globalThis.MouseEvent;
+
+      setPanelCoords({x: 0, y: 0})
+      setShowCategorySettings(false)
+
+    }
+    document.addEventListener("mousedown", handleContextMenuClick)
+
+    return () => {
+      document.removeEventListener("mousedown", handleContextMenuClick)
+    }
+  }, [])
 
 
   useEffect(() => {
@@ -509,7 +540,7 @@ const ServerComponents = () => {
 
     const handleLeaveVoice = () => {
       setSampleVoiceChannelMembers((prev) => 
-        prev.filter((member) => member.id !== currentUser.id)
+        prev.filter((member) => member.memberId !== currentUser.userId)
       )
     }
 
@@ -518,7 +549,7 @@ const ServerComponents = () => {
       handleLeaveVoice()
     }
     
-  }, [isInVoice, currentUser.id])
+  }, [isInVoice, currentUser.userId])
 
 
 
@@ -542,11 +573,27 @@ const ServerComponents = () => {
         userId: message.userId,
         channelId: activeChannel,
         messageImgUrl: message.messageImgUrl || "",
-        isContentWithImg: message.isContentWithImg
+        isContentWithImg: message.isContentWithImg,
+        isReply: message.isReply
       }
 
+    
+      if (message.isReply){
+        const repliedToObj: ReplyMessage = {
+          messageId: message.repliedTo?.messageId || "",
+          message: message.repliedTo?.message || "",
+          userId: message.repliedTo?.userId || "",
+          displayName: message.repliedTo?.displayName || "",
+          imgUrl: message.repliedTo?.imgUrl
+        }
+
+        newMessageObj.repliedTo = repliedToObj
+      }
+
+      // Message Object will always refer to User ID instead of member ID.
+      // Messages are not contextual but rather ownership type (when user leaves server, messages will retain)
       if (newMessageObj.isContentWithImg && 
-          message.userId === currentUser.id && 
+          message.userId === currentUser.userId && 
           message.messageId)
         {
         console.log("Message w/ img detected. ")
@@ -601,17 +648,17 @@ const ServerComponents = () => {
     channelType: string 
   ) => {
     const isAlreadyInVoice = sampleVoiceChannelMembers.some(
-      (member) => member.id === currentUser.id
+      (member) => member.memberId === currentUser.userId
     );
 
     // useful when switching channels (will add members and messages here as well)
     setActiveChannel(activeChannel)
 
     if (channelType === "voice" && !isAlreadyInVoice){
-      addMemberToVoiceChannel(
-        currentUser,
-        selectedChannel
-      )
+      // addMemberToVoiceChannel(
+      //   currentUser,
+      //   selectedChannel
+      // )
       return;
     }
     
@@ -642,28 +689,29 @@ const ServerComponents = () => {
     }
   }
 
+
   const handleCreateChannelModal = () => {
     setCreateChannelModal(!createChannelModal)
   }
+  // mamaya na toh
+  // const addMemberToVoiceChannel = (
+  //     member: ServerUser, 
+  //     channel: Channel
+  //   ) => {
 
-  const addMemberToVoiceChannel = (
-      member: ServerMembers, 
-      channel: Channel
-    ) => {
+  //   // updates list of members that are in the voice channel
+  //   setSampleVoiceChannelMembers(prev => [...prev, member])
 
-    // updates list of members that are in the voice channel
-    setSampleVoiceChannelMembers(prev => [...prev, member])
+  //   // calling user context setState to for (lower left) user panel to update UI
+  //   setIsInVoice(true) 
 
-    // calling user context setState to for (lower left) user panel to update UI
-    setIsInVoice(true) 
-
-    // values will be used in User Profile (lower left panel) when joining voice channel
-    setJoinedVoiceChannel({
-      channelId: channel.channelId,
-      channelName: channel.channelName,
-      serverName: serverChannels.serverName || ""
-    })
-  }
+  //   // values will be used in User Profile (lower left panel) when joining voice channel
+  //   setJoinedVoiceChannel({
+  //     channelId: channel.channelId,
+  //     channelName: channel.channelName,
+  //     serverName: serverChannels.serverName || ""
+  //   })
+  // }
 
   const sendMessage = async (e: React.SubmitEvent<HTMLFormElement>) => {
 
@@ -679,22 +727,39 @@ const ServerComponents = () => {
     ) return
 
 
-    //let uploadedImageUrl = "";
-
     const messageBody: Message = {
       serverId: serverId,
       channelId: activeChannel,
-      userId: currentUser.id,
+      userId: currentUser.userId,
       displayName: currentUser.displayName,
       message: messageInputRef.current.value,
-      isContentWithImg: imgList.length >= 1
+      isContentWithImg: imgList.length >= 1,
+      isReply: !!replyMessageObject.messageId
     }
 
+    if (replyMessageObject.messageId){
+
+      const repliedToObj: ReplyMessage = {
+        messageId: replyMessageObject.messageId,
+        message: replyMessageObject.message,
+        userId: replyMessageObject.userId,
+        displayName: replyMessageObject.displayName
+      }
+      messageBody.repliedTo = repliedToObj
+    }
+
+  
     console.log("testing payload: ", messageBody)
 
     // WS endpoint configured in backend
     send(`/discordia/sendMessage`, messageBody)
     messageInputRef.current.value = ""
+    setReplyMessageObject({
+      messageId: "",
+      message: "",
+      userId: "",
+      displayName: ""
+    })
   }
 
   const handleUploadImage = (messageId: string) => {
@@ -766,15 +831,48 @@ const ServerComponents = () => {
     }
   }
 
-  if (isLoading){
-    return <div className="flex h-screen items-center justify-center">Loading Server...</div>;
+  // making the border of the div to be the only clickable area of the div
+  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
+
+    const div = replyMessageRef.current;
+
+    let rect;
+    if (div){
+      rect = div.getBoundingClientRect();
+      const borderWidth = 32; // Match your CSS border width
+
+      // Calculate click position relative to the div
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // Check if click is within the border area
+      const isClickInBorder =
+        clickX < borderWidth ||
+        clickY < borderWidth ||
+        clickX > rect.width - borderWidth ||
+        clickY > rect.height - borderWidth;
+
+      if (isClickInBorder) {
+        alert('Border clicked!');
+      }
+    }
+  };
+
+
+  const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setShowCategorySettings(true)
+    setPanelCoords({
+      x: event.clientX,
+      y: event.clientY
+    })
   }
 
-  if (status === "pending" || fetchStatus === "fetching"){
-    return <div className="h-screen bg-blue-400 w-full">
-      Hold on mga bossing
-    </div>
+  if (status === "pending" || fetchStatus === "fetching" || isLoading){
+    return <ServerComponentLoader />
   }
+
+  console.log("Server member details: ", serverMemberDetails)
 
   return (
     <div className="flex w-full h-screen">
@@ -812,7 +910,7 @@ const ServerComponents = () => {
           {
             openServerSettingsPanel && (
               <div className="absolute top-11 left-4 bg-[#2B2D31] 
-                rounded-lg shadow-2xl text-[14px] font-bold text-[#DBDEE1] "
+                rounded-lg shadow-2xl text-[14px] font-bold text-[#DBDEE1] z-50"
                 ref={serverSettingsPanel}
                 >
                 {serverSettings.map((setting, i) => (
@@ -822,7 +920,6 @@ const ServerComponents = () => {
                       onClick={() => {
                         handleSettingToggle(setting.value)
                         setOpenServerSettingsPanel(false)
-                        //setOpenServerSettings(true)
                       }}
                     >
                     {setting.name}
@@ -837,17 +934,52 @@ const ServerComponents = () => {
         </div>
 
         {/* Channel List */}
-        <div className="flex flex-col py-5 px-1 text-[#949BA4]">
+        <div className="flex flex-col py-5 px-1 text-[#949BA4] relative">
           {
             (serverChannels.serverCategories || []).map((list: Category, i: number) => (
               <div key={i}>
-                <div className="">
+                <div className="relative">
+
+                  {/* Category Settings Panel */}
+                  {
+                    showCategorySettings && (
+                      <div className={` bg-[#2c2f33] shadow-2xl pointer-events-auto
+                      fixed z-999 rounded-md px-3 text-sm font-semibold text-white`}
+                      //ref={replyMessageRef}
+                      style={{
+                        top: panelCoords.y,
+                        left: panelCoords.x
+                      }}
+                      >
+                        {CategorySettingsMenu.map((cat) => (
+                          <div
+                            key={cat.id}
+                            className={`${cat.showBorder && "border-[#363c41] border-b-2 mb-2"} 
+                            pointer-events-auto
+                            cursor-pointer hover:bg-white/10 py-2 px-1 my-1 border-spacing-5 rounded-md
+                            `}
+                            onMouseDown={(e) => {
+                              e.stopPropagation()
+                              setCategoryName(list.categoryName)
+                              setCategoryId(list.categoryId)
+                              setOpenCategorySettings(true)
+                              setShowCategorySettings(false)
+                            }}
+                          >
+                            <p className={`${cat.id === 106 && "text-red-400 hover:bg-red-500/10"}`}>
+                              {cat.name}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  }
 
                   {/* Channel Section Name and Icons */}
                   <div className="pt-2 text-[14px] pl-1 flex justify-between
                     items-center cursor-pointer hover:text-[#DBDEE1] group">
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1" onContextMenu={handleContextMenu}>
                       {list.categoryName}
                       <RiArrowDownSLine 
                         className="group-hover:-rotate-90 duration-150"/>
@@ -948,7 +1080,7 @@ const ServerComponents = () => {
                         {
                           (channel.channelType === "voice") &&
                           sampleVoiceChannelMembers.map((member) => (
-                            <div key={member.id}>
+                            <div key={member.memberId}>
                               <div className="ml-8 hover:bg-white/10 rounded-md 
                               p-1.25 cursor-pointer">
 
@@ -992,7 +1124,7 @@ const ServerComponents = () => {
             absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2`}>
             {
               sampleVoiceChannelMembers.map((member) => (
-                <div key={member.id} className="bg-gray-500 rounded-lg p-10 
+                <div key={member.memberId} className="bg-gray-500 rounded-lg p-10 
                   flex flex-col justify-center items-center gap-6">
 
                   <img 
@@ -1013,8 +1145,8 @@ const ServerComponents = () => {
                 <button 
                   type="button"
                   className="bg-white text-black p-2 rounded-lg font-bold hover:bg-gray-200 transition"
-                  onClick={() => 
-                    addMemberToVoiceChannel(currentUser, selectedChannel)
+                  onClick={() => {}
+                    //addMemberToVoiceChannel(currentUser, selectedChannel)
                   }
                 >
                   Join Voice Channel
@@ -1101,18 +1233,22 @@ const ServerComponents = () => {
                   </button>
                 </div>
 
-                {
-                  channelMessages?.length > 1 && (
-                    <hr className={`border border-[#363c41] mb-5 mx-4`}></hr>
-                  )
-                }
+                <hr className={`border border-[#363c41] mx-3 opacity-0
+                  ${channelMessages?.length > 1 && "mb-5 opacity-100"}`}></hr>
                 
                 {/* Messages render area */}
 
                 {
                   isLoading && (
-                    <div>
-                      Loading lmao
+                    <div className="flex-1 flex flex-col w-full min-h-0 mb-auto overflow-hidden">
+                      {[...Array(3)].map((_, i) => (
+                      <div key={i} className="mb-7">
+                        <div className="h-5 bg-[#202024] my-2 w-full animate-pulse gap-2 ml-1  rounded-md"></div>
+                        {[...Array(2)].map((_, index) => (
+                          <div key={index} className="h-7 bg-[#202024] my-2  animate-pulse gap-2 mx-4  rounded-md"></div>
+                        ))}
+                      </div>
+                    ))}
                     </div>
                   )
                 }
@@ -1139,15 +1275,22 @@ const ServerComponents = () => {
                         if (prevMsg){
                           isOneMinApart = compareMessageDate(prevMsg, message)
                         }
+
                         
                         // Master condition
-                        const shouldShowHeader = isFirstMessage || isNewUser || isOneMinApart;
+                        const shouldShowHeader = 
+                          isFirstMessage || isNewUser || isOneMinApart || message.isReply;
 
                         return(
                           <div
                             key={message.messageId}
-                            className={`flex group relative ${shouldShowHeader && "mt-5"}`}
+                            className={`flex group relative 
+                              ${shouldShowHeader && "mt-5"}
+                              ${replyMessageObject.messageId === message.messageId 
+                                && "bg-[#2b2a5c]/60 border-l-2 border-indigo-400"}
+                              `}
                             >
+                              
                               {/* white background when hovering the content */}
                               <div className={`flex items-center gap-2 group-hover:bg-white/10 
                                 w-full px-4`}>
@@ -1155,9 +1298,10 @@ const ServerComponents = () => {
                                 {/* User Avatar */}
                                 {
                                   shouldShowHeader ?
-                                  <div className="relative place-self-start pt-1 ">
+                                  <div className={`relative z-95
+                                  ${!message.isReply ? "place-self-start pt-1" : "pt-5" } `}>
                                     {message.userAvatar === ""
-                                      ? <BsDiscord className="w-10 h-10 p-1 bg-indigo-500 rounded-full"/>
+                                      ? <BsDiscord className="w-10 h-10 p-1 bg-indigo-500 rounded-full z-10"/>
                                       : <img 
                                           src={message.userAvatar}
                                           alt={message.displayName}
@@ -1177,17 +1321,56 @@ const ServerComponents = () => {
                                 
                                 
                                 <div className="block">
+                                  {/* Reply Message */}
+                                  {
+                                    message.isReply && (
+                                      <div className="text-sm flex items-center relative" >
+                                        {/* "L-shape" connector */}
+                                        <div className="bg-transparent h-10 w-8 hover:border-zinc-500
+                                          absolute -left-8 top-2 rounded-tl-lg border-t-2 border-l-2 cursor-pointer"
+                                          ref={replyMessageRef}
+                                          onClick={handleClick}
+                                          >
+                                        </div>
+
+                                        {/* Reply Message Details */}
+                                        <div className="flex items-center ">
+                                          {
+                                            message.userAvatar 
+                                            ? <img 
+                                              src={message.userAvatar} 
+                                              alt={message.displayName}
+                                              className="h-6.5 w-7 rounded-full p-0.5 mx-1"
+                                              />
+                                            : <BsDiscord className="w-4 h-4 rounded-full bg-indigo-500 p-0.5 mx-1"/>
+                                          }
+
+                                          <div>
+                                            <p className="font-semibold inline-block hover:underline cursor-pointer">
+                                              {message.repliedTo?.displayName}&nbsp;
+                                            </p>
+                                            {message.repliedTo?.message}
+                                          </div>
+                                          
+                                        </div>
+                                        
+                                      </div>
+                                    )
+                                  }
+
                                   {/* Display name and date time stamp */}
                                   { 
                                    shouldShowHeader &&
                                     <p className="text-white ">
-                                      <span className="font-semibold">{message.displayName}</span>&nbsp;
+                                      <span className="font-semibold hover:underline cursor-pointer">
+                                        {message.displayName}</span>&nbsp;
+
                                       <span className="font-medium text-xs text-gray-400">
                                         {formatDateTimestamp(message.dateTimestamp || "")}
                                       </span>
                                     </p>
                                   }
-                                  <p className={`font-semibold 
+                                  <p className={` 
                                     ${message.isContentWithImg && "pb-1"}`}>
                                     {message.message}
                                   </p>
@@ -1203,7 +1386,8 @@ const ServerComponents = () => {
                                       </div>
                                     </div>
                                   }
-
+                                  
+                                  {/* Actual Image render */}
                                   {
                                     message.isContentWithImg &&
                                     mutatedVariable?.messageId !== message.messageId && (
@@ -1222,19 +1406,31 @@ const ServerComponents = () => {
                                 <div className="absolute -top-4 right-4 bg-[#2B2D31] 
                                   text-lg flex items-center gap-2 p-1 opacity-0 
                                   group-hover:opacity-100 rounded-md shadow-2x">
-
+                                  
+                                  {/* Reply Icon */}
                                   <BsArrow90DegLeft 
                                     data-tooltip-id="message-reply"
                                     data-tooltip-content="Reply"
                                     className="cursor-pointer p-0.5 
                                     hover:bg-[#35373C] hover:text-[#DBDEE1]"
+                                    onClick={() => setReplyMessageObject({
+                                      messageId: message.messageId || "",
+                                      message: message.message,
+                                      userId: message.userId,
+                                      displayName: message.displayName,
+                                      imgUrl: message.messageImgUrl
+                                    })}
                                   />
+
+                                  {/* Forward Icon */}
                                   <BsArrow90DegRight 
                                     data-tooltip-id="message-forward"
                                     data-tooltip-content="Forward"
                                     className="cursor-pointer p-0.5 
                                     hover:bg-[#35373C] hover:text-[#DBDEE1]"
                                   />
+
+                                  {/* more options (copy text, add reaction, etc..) */}
                                   <FaEllipsisH 
                                     data-tooltip-id="message-more"
                                     data-tooltip-content="More"
@@ -1261,17 +1457,42 @@ const ServerComponents = () => {
               
               {/* message input tag */}
               <div className="p-4 flex-none relative">
+
+                {/* Reply Message Feature */}
+                {
+                  replyMessageObject.messageId && (
+                    <div className="bg-[#383a40] rounded-t-lg px-3 py-1 border-b-2 
+                    border-[#444c53] flex items-center justify-between">
+                      <p>Replying to&nbsp;
+                        <span className="text-gray-100 font-semibold">
+                          {replyMessageObject.displayName}
+                        </span>
+                      </p>
+                      <IoMdCloseCircleOutline 
+                        className=" cursor-pointer text-xl"
+                        onClick={() => setReplyMessageObject({
+                          messageId: "",
+                          message: "",
+                          userId: "",
+                          displayName: ""
+                        })
+                        }
+                        />
+                    </div>
+                  )
+                }
                 
                 {/* Image/s containers */}
-                <div className={`bg-[#383a40] rounded-lg p-2 flex flex-col items-start 
+                <div className={`bg-[#383a40] p-2 flex flex-col items-start 
+                ${replyMessageObject.messageId ? "rounded-b-lg" : "rounded-lg"} 
                   justify-center relative`}>
                   
                   <div className="flex gap-5 items-center">
                     {
                       imgList?.length > 0 && (
                         imgList?.map((img, i) => (
-                          <div key={i} className="h-50 w-45 bg-[#202122] rounded-lg 
-                          relative flex flex-col items-center">
+                          <div key={i} className={`h-50 w-45 bg-[#202122] rounded-lg 
+                          relative flex flex-col items-center`}>
                             <img 
                               key={i}
                               src={img.objectURL}
@@ -1318,13 +1539,13 @@ const ServerComponents = () => {
                 {
                   messageOptionsPanel && (
                     <div className="absolute bottom-15 left-8 bg-[#181d22] 
-                      shadow-xl p-3 border-[#363c41] border rounded-lg">
+                      shadow-xl p-3 border-[#363c41] border rounded-lg z-99">
 
                       <button 
                         type="button"
                         onClick={handleInputFileRefClick}
                         className="hover:bg-white/10 p-1 px-2 rounded-lg cursor-pointer">
-                        <RiFileUploadLine className="inline-flex mb-1 mr-2"/>
+                        <RiFileUploadLine className="inline-flex mb-1 mr-2 "/>
                         Upload a File
                       </button>
                     </div>
@@ -1359,13 +1580,13 @@ const ServerComponents = () => {
             </div>
 
             <p className="text-sm text-[#949BA4]">
-              Online - {serverMembers?.length}
+              Online - {serverChannels?.serverMembers?.length}
             </p>
             
             {
-              (serverMembers || []).map((member: ServerMembers) => (
+              (serverChannels?.serverMembers || []).map((member: ServerMembers) => (
                 <div 
-                  key={member.id}
+                  key={member.memberId}
                   >
                   <div className="relative">
 
@@ -1374,27 +1595,34 @@ const ServerComponents = () => {
                       className="flex items-center gap-2 py-1.5 
                       hover:bg-white/10 px-1.5 rounded-md cursor-pointer relative"
                       onClick={() => setServerMemberDetails({
-                        id: member.id,
-                        user: member.user,
-                        userName: member.userName,
-                        displayName: member.displayName,
+                        memberId: member.memberId,
+                        serverNickname: member.serverNickname,
+                        username: member.user?.username || "",
+                        displayName: member.user?.displayName || "",
                         userTag: member.userTag,
                         avatar: member.avatar
                       })}>
-
-                      <img 
-                          src={member.avatar} 
-                          alt={member.user} 
-                          className="w-8 h-8 rounded-full bg-gray-500" 
+                      
+                      {
+                        member.imgUrl 
+                        ? <img 
+                            src={member.imgUrl} 
+                            alt={member.serverNickname} 
+                            className="w-8 h-8 rounded-full bg-gray-500" 
+                          />
+                        : <BsDiscord 
+                          className="bg-indigo-500 h-8 w-8 rounded-full p-1"
                         />
-                      {member.user}
+                      }
+                      
+                      <p>{member.serverNickname}</p>
 
                       <span className="bg-green-400 h-2 w-2 absolute bottom-1 
                       left-7 rounded-full"></span>
                     </div>
                     
                     {/* Server member details panel */}
-                    {serverMemberDetails.id === member.id && (
+                    {serverMemberDetails.memberId === member.memberId && (
                       <div className="absolute top-3 -left-90
                         bg-[#232428] z-50 rounded-md shadow-4xl"
                         ref={memberPanel}
@@ -1421,19 +1649,28 @@ const ServerComponents = () => {
                           <div className="w-85">
 
                             <div className="p-4">
-                              <img 
-                                src={serverMemberDetails.avatar} 
-                                alt={serverMemberDetails.user} 
-                                className="h-24 w-24 -mt-12  rounded-full
-                                border-6 border-[#232428] bg-gray-600"
-                              />
+
+                              {
+                                serverMemberDetails.imgUrl
+                                ? <img 
+                                    src={serverMemberDetails.imgUrl} 
+                                    alt={serverMemberDetails.serverNickname} 
+                                    className="h-24 w-24 -mt-12  rounded-full
+                                    border-6 border-[#232428] bg-gray-600"
+                                  />
+                                : <BsDiscord 
+                                  className="h-24 w-24 bg-indigo-500 border-6
+                                  border-[#232428] p-1 rounded-full -mt-12"
+                                />
+                              }
+                              
 
                               <p className="text-lg font-semibold">
-                                {serverMemberDetails.user}
+                                {serverMemberDetails.serverNickname}
                               </p>
 
                               <p className="text-sm">
-                                {serverMemberDetails.userTag}
+                                {serverMemberDetails.user?.username}
                               </p>
                               
                               {/* Should be visible only to admin */}
@@ -1560,6 +1797,22 @@ const ServerComponents = () => {
               channelId={activeChannel || ""}
               channelName={selectedChannel?.channelName || ""}
               categoryName={categoryName || ""}
+            />
+          </div>
+        )
+      }
+
+      {
+        openCategorySettings && (
+          <div className="fixed inset-0 h-full w-full z-99">
+            <CategorySettings 
+              categoryName={categoryName}
+              categoryId={categoryId || ""}
+              closeModal={() => {
+                setOpenCategorySettings(false)
+                setCategoryName("")
+                setCategoryId("")
+              }}
             />
           </div>
         )
