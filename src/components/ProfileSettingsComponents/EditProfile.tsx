@@ -232,7 +232,7 @@ const EditProfile = () => {
                     setHasChanges(user?.username !== e.target.value);
                     setUserDisplayValues((prev) => ({
                       ...prev,
-                      userName: e.target.value
+                      username: e.target.value
                     })
                   )}}
                   className="bg-[#111113] focus:outline-[#7289DA] focus:outline-2 
