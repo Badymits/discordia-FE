@@ -45,9 +45,9 @@ export default function UserContextProvider(
         return {
           Firstname: parsedObj.firstName,
           Lastname: parsedObj.lastName,
-          Username: parsedObj.username,
-          DisplayName: parsedObj.displayname,
-          Email: parsedObj.email,
+          username: parsedObj.username,
+          displayName: parsedObj.displayname,
+          email: parsedObj.email,
           UserId: parsedObj.userId
           
         };
