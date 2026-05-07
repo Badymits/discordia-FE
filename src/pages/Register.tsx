@@ -114,7 +114,7 @@ const Register = () => {
     if (user) {
       user.Firstname = firstname;
       user.Lastname = lastname;
-      user.userName = userName;
+      user.username = userName;
       user.displayName = displayName;
       user.email = email;
       user.UserId = userId;
