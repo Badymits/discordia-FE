@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import type { RegisterForm } from "../types/Register";
+import type { RegisterForm } from "../types/User";
 import { toast, ToastContainer } from "react-toastify";
 import { registerUser } from "../services/authUserService";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,7 @@ interface ResponseObject{
   firstname: string;
   lastname: string;
   email: string
-  userName: string;
+  username: string;
   displayName: string;
   userId: string;
 }
@@ -21,7 +21,7 @@ const Register = () => {
     firstname: "",
     lastname: "",
     email: "",
-    userName: "",
+    username: "",
     displayName: "",
     password: "",
     confirmPassword: "",
@@ -73,7 +73,7 @@ const Register = () => {
       const userObjStorage = {
         firstName: response.data.firstname,
         lastName: response.data.lastname,
-        username: response.data.userName,
+        username: response.data.username,
         displayname: response.data.displayName,
         email: response.data.email,
         userId: response.data.UserId
@@ -82,7 +82,7 @@ const Register = () => {
       assignValuesToUser({
         firstname: response.data.firstname,
         lastname: response.data.lastname,
-        userName: response.data.username,
+        username: response.data.username,
         displayName: response.data.displayName,
         email: response.data.email,
         userId: response.data.UserId
@@ -106,7 +106,7 @@ const Register = () => {
   const assignValuesToUser = ({
     firstname,
     lastname,
-    userName,
+    username,
     displayName,
     email,
     userId
@@ -114,7 +114,7 @@ const Register = () => {
     if (user) {
       user.Firstname = firstname;
       user.Lastname = lastname;
-      user.username = userName;
+      user.username = username;
       user.displayName = displayName;
       user.email = email;
       user.UserId = userId;
@@ -158,9 +158,9 @@ const Register = () => {
               type="text" 
               placeholder='Enter Username' 
               className='bg-gray-100 p-1 m-2' 
-              value={registerForm?.userName}
+              value={registerForm?.username}
               onChange={(e) => 
-                handleChange("userName", e.target.value)}
+                handleChange("username", e.target.value)}
               ref={inputRef}
             />
           </div>
