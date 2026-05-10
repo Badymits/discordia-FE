@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion,AnimatePresence } from "framer-motion";
 
 import { CgClose } from "react-icons/cg";
@@ -15,16 +15,17 @@ interface InviteToServerProps{
   channelObj: Channel;
   channelIcon?: IconType
   serverName: string;
+  serverCode: string;
 }
 
 const InviteToServer = ({
   closeModal,
   channelObj,
-  serverName
+  serverName,
+  serverCode
 }: InviteToServerProps ) => {
 
   const combinedMembers: ServerMembers[] = useMemo(() => [
-
     {
       memberId: "33",
       displayName: "that333",
@@ -94,6 +95,7 @@ const InviteToServer = ({
   ], [])
 
   const [searchInput, setSearchInput] = useState<string>("")
+  const [textCopied, setTextCopied] = useState<boolean>(false)
   //const [debouncedSearch, setDebouncedSearch] = useState(searchInput)
 
   const filteredMembers = useMemo(() => {
@@ -118,7 +120,20 @@ const InviteToServer = ({
     );
   };
 
+  useEffect(() => {
+    let timer: number;
+    if (textCopied){
+       timer = setTimeout(() => {
+        setTextCopied(false)
+      }, 3000)
+    }
+    
+
+    return () => clearTimeout(timer)
+  }, [textCopied])
+
   const inviteToServerContent = () => {
+
     return (
       <div className="">
 
@@ -215,7 +230,7 @@ const InviteToServer = ({
 
             <div className='relative'>
               <input 
-                value={`https://discord.gg/YKGd4EJm`}
+                value={`https://discord.gg/${serverCode}`}
                 className='bg-[#111113] border border-[#363c41] 
                 focus:outline-[#7289DA] focus:outline-2 text-[#ebe8e8] 
                 p-2  rounded-md cursor-pointer w-full my-1' 
@@ -232,6 +247,12 @@ const InviteToServer = ({
                   font-semibold cursor-pointer duration-100
                   bg-[#607de4] hover:bg-[#7289DA] w-20 py-1 rounded-md 
                   disabled:opacity-60 disabled:pointer-events-none"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `https://discord.gg/${serverCode}`
+                  )
+                  setTextCopied(true)
+                }}
                 >
                 Copy
               </button>
@@ -246,8 +267,6 @@ const InviteToServer = ({
               </span>
             </p>
           </div>
-
-          
         </div>
       </div>
     )
@@ -277,6 +296,25 @@ const InviteToServer = ({
           </motion.div>
         </AnimatePresence>
       </motion.div>
+      {
+        textCopied && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{  type: "spring" }}
+              
+              key="copy-toast"
+            >
+              <div className="fixed top-5 text-white left-1/2 transform -translate-x-1/2
+                 bg-green-700 p-3 rounded-full ">
+                <p className="">Link Copied!</p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        )
+      }
     </div>
   )
 }
