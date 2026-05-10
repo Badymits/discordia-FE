@@ -1,7 +1,7 @@
 
 
 export interface User{
-  UserId: string;
+  userId: string;
   Firstname: string;
   Lastname: string;
   displayName?: string;
@@ -16,7 +16,7 @@ export interface ServerUser{
   userId: string;
   username: string;
   displayName: string;
-  bio?: string;
+  userBio?: string;
   imgUrl: string;
 }
 
