@@ -24,6 +24,7 @@ import { HiHashtag, HiLockClosed, HiUsers } from "react-icons/hi";
 import { BsArrow90DegLeft, BsDiscord } from "react-icons/bs";
 import { BsArrow90DegRight } from "react-icons/bs";
 import { PiSpeakerSimpleHighLight } from "react-icons/pi";
+import { FaRegImage } from "react-icons/fa6";
 
 import  { voiceChannelMembers } from "../../utils/DummyData";
 import CreateChannelModal from "../ServerComponents/CreateChannelModal";
@@ -102,7 +103,8 @@ const ServerComponents = () => {
     message: "",
     userId: "",
     displayName: "",
-    imgUrl: ""
+    imgUrl: "",
+    isContentWithImg: false
   })
 
   const [showCategorySettings, setShowCategorySettings] = useState(false)
@@ -110,8 +112,8 @@ const ServerComponents = () => {
 
   const { 
     isInVoice,
-    setIsInVoice,
-    setJoinedVoiceChannel
+    // setIsInVoice,
+    // setJoinedVoiceChannel
   } = useCurrentUser();
 
   const { 
@@ -552,7 +554,7 @@ const ServerComponents = () => {
   }, [isInVoice, currentUser.userId])
 
 
-
+  console.log(replyMessageObject)
   useEffect(() => {
 
     if (!serverId || !selectedChannel || !activeChannel) return;
@@ -574,17 +576,20 @@ const ServerComponents = () => {
         channelId: activeChannel,
         messageImgUrl: message.messageImgUrl || "",
         isContentWithImg: message.isContentWithImg,
-        isReply: message.isReply
+        isReply: message.isReply,
+        type: "server"
       }
 
-    
+      
       if (message.isReply){
+
         const repliedToObj: ReplyMessage = {
           messageId: message.repliedTo?.messageId || "",
           message: message.repliedTo?.message || "",
           userId: message.repliedTo?.userId || "",
           displayName: message.repliedTo?.displayName || "",
-          imgUrl: message.repliedTo?.imgUrl
+          imgUrl: message.repliedTo?.imgUrl,
+          isContentWithImg: !!message.repliedTo?.isContentWithImg
         }
 
         newMessageObj.repliedTo = repliedToObj
@@ -734,7 +739,8 @@ const ServerComponents = () => {
       displayName: currentUser.displayName,
       message: messageInputRef.current.value,
       isContentWithImg: imgList.length >= 1,
-      isReply: !!replyMessageObject.messageId
+      isReply: !!replyMessageObject.messageId,
+      type: "server"
     }
 
     if (replyMessageObject.messageId){
@@ -743,7 +749,8 @@ const ServerComponents = () => {
         messageId: replyMessageObject.messageId,
         message: replyMessageObject.message,
         userId: replyMessageObject.userId,
-        displayName: replyMessageObject.displayName
+        displayName: replyMessageObject.displayName,
+        isContentWithImg: replyMessageObject.isContentWithImg
       }
       messageBody.repliedTo = repliedToObj
     }
@@ -758,7 +765,8 @@ const ServerComponents = () => {
       messageId: "",
       message: "",
       userId: "",
-      displayName: ""
+      displayName: "",
+      isContentWithImg: false
     })
   }
 
@@ -1345,11 +1353,17 @@ const ServerComponents = () => {
                                             : <BsDiscord className="w-4 h-4 rounded-full bg-indigo-500 p-0.5 mx-1"/>
                                           }
 
-                                          <div>
+                                          <div className="cursor-pointer">
                                             <p className="font-semibold inline-block hover:underline cursor-pointer">
                                               {message.repliedTo?.displayName}&nbsp;
                                             </p>
                                             {message.repliedTo?.message}
+
+                                            {
+                                              message.repliedTo?.isContentWithImg && (
+                                                <FaRegImage className="inline-block mx-1"/>
+                                              )
+                                            }
                                           </div>
                                           
                                         </div>
@@ -1418,7 +1432,8 @@ const ServerComponents = () => {
                                       message: message.message,
                                       userId: message.userId,
                                       displayName: message.displayName,
-                                      imgUrl: message.messageImgUrl
+                                      imgUrl: message.messageImgUrl,
+                                      isContentWithImg: message.isContentWithImg
                                     })}
                                   />
 
@@ -1474,7 +1489,8 @@ const ServerComponents = () => {
                           messageId: "",
                           message: "",
                           userId: "",
-                          displayName: ""
+                          displayName: "",
+                          isContentWithImg: false
                         })
                         }
                         />
@@ -1758,6 +1774,7 @@ const ServerComponents = () => {
               closeModal={() => setInviteModal(false)}
               channelObj={selectedChannel}
               serverName={server?.serverName || ""}
+              serverCode={serverChannels?.serverInviteCode}
             />
           </div>
         )
