@@ -1,11 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 import { 
   getChannelById,
-  getMessagesByChannelId,
+  getServerMessagesByChannelId,
   getServer,
+  getServerCode,
   getServersByUserId, 
   getUser,
-  getUsers
+  getUsers,
+  getDirectChannels
 } from "../services/serverService";
 
 export const fetchUser = (userId: string) => {
@@ -19,6 +21,13 @@ export const fetchUsers = (searchTerm: string, userId: string) => {
 	return queryOptions({
 		queryKey: ["searchedUsers"],
 		queryFn: () => getUsers(searchTerm, userId)
+	})
+}
+
+export const fetchDirectChannels = (userId: string) => {
+	return queryOptions({
+		queryKey: ["directChannels", userId],
+		queryFn: () => getDirectChannels(userId)
 	})
 }
 
@@ -37,6 +46,13 @@ export const fetchServer = (serverId: string) => {
 	})
 }
 
+export const fetchServerCode = (serverId: string) => {
+	return queryOptions({
+		queryKey: ["serverCode", serverId],
+		queryFn: () => getServerCode(serverId)
+	})
+}
+
 export const fetchChannel = (channelId: string) => {
 	return queryOptions({
 		queryKey: ["channel", channelId],
@@ -47,7 +63,7 @@ export const fetchChannel = (channelId: string) => {
 export const fetchMessages = (channelId: string) => {
   return queryOptions({
     queryKey: ["channelMessages", channelId],
-    queryFn: () => getMessagesByChannelId(channelId)
+    queryFn: () => getServerMessagesByChannelId(channelId)
     .then(res => res.data)
   })
 }
