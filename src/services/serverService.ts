@@ -4,6 +4,7 @@ import type {
   CreateChannelPayload,
   UpdateChannelPayload, 
 } from "../types/ServerTypes";
+import type { ServerUser } from "../types/User";
 
 
 
@@ -50,11 +51,17 @@ export const createCategory = async({serverId, categoryName}: CreateCategoryPayl
 }
 
 export const uploadImage = async(formData: FormData, messageId: string) => {
-  return http.post(`/messages/upload-image/${messageId}`, formData, {
+  return http.post(`/server-messages/upload-image/${messageId}`, formData, {
     headers: {
       "Content-Type": "multipart/form-data"
     }
   }).then(res => res.data)
+}
+
+export const createDirectChannel = async(participants: ServerUser[]) => {
+  return http.post(`/direct-channel/create-direct-channel`, {
+    directChannelParticipants: participants
+  })
 }
 
 // =========================
@@ -78,8 +85,8 @@ export const getServer = async(serverId: string) => {
   return http.get(`/server/${serverId}`)
 }
 
-export const getString = async() => {
-  return http.get(`/server/get-string`)
+export const getServerCode = async(serverId: string) => {
+  return http.get(`/server/get-server-code/${serverId}`)
 }
 
 export const getServersByUserId = async(userId: string | number) => {
@@ -90,8 +97,12 @@ export const getChannelById = async(channelId: string) => {
   return http.get(`/channels/${channelId}`)
 }
 
-export const getMessagesByChannelId = async(channelId: string | number) => {
-  return http.get(`/messages/${channelId}`)
+export const getServerMessagesByChannelId = async(channelId: string | number) => {
+  return http.get(`/server-messages/${channelId}`)
+}
+
+export const getDirectChannels = async(userId: string) => {
+  return http.get(`/direct-channel/get-direct-channels/${userId}`)
 }
 
 // =========================
@@ -105,6 +116,10 @@ export const deleteChannel = async(channelId: string) => {
 
 export const deleteCategory = async(categoryId: string) => {
   return http.delete(`/category/${categoryId}`)
+}
+
+export const deleteServerMessage = async(messageId: string) => {
+  return http.delete(`/server-messages/${messageId}`)
 }
 
 // ============================
