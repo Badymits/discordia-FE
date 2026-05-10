@@ -11,6 +11,7 @@ import type { Server } from '../types/ServerTypes';
 import { fetchServersList } from '../query/serverQueries';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentUser } from '../context/UserContext';
+import ServerListLoader from './LoadingComponents/ServerListLoader';
 
 interface ServerListProps{
   serverList: Server[];
@@ -34,8 +35,8 @@ const ServerList = (
   console.log(user)
 
   const { data, isLoading } = useQuery({
-    ... fetchServersList(user?.UserId || ""),
-    enabled: !!user?.UserId, // Prevents fetching data until UserID has value
+    ... fetchServersList(user?.userId || ""),
+    enabled: !!user?.userId, // Prevents fetching data until UserID has value
     staleTime: 1000 * 5 * 60,
     gcTime: 1000 * 5 * 60
   })
@@ -72,7 +73,10 @@ const ServerList = (
   }
 
 
-  if (isLoading) return <div>Loading Server List...</div>
+  if (isLoading) {
+    return <ServerListLoader />
+  }
+    
 
   return (
     <div className='bg-[#111113] w-19.5 h-full px-2 shrink-0'>
