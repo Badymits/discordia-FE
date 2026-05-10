@@ -1,14 +1,14 @@
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type RefObject, type SetStateAction } from 'react';
 import { FaEllipsisV, FaSearch, FaUserFriends } from 'react-icons/fa'
 import { FiMessageSquare } from 'react-icons/fi'
 import { Tooltip } from 'react-tooltip'
-import type { User } from '../types/User';
+import type { ServerUser } from '../types/User';
 import SearchUsersListLoader from './LoadingComponents/SearchUsersListLoader';
 import { BsDiscord } from 'react-icons/bs';
-import { useCurrentUser } from '../context/UserContext';
-import { getUsers } from '../services/serverService';
+import { createDirectChannel, getUsers } from '../services/serverService';
+import { useNavigate } from 'react-router-dom';
 
 interface DirectMessage {
   active: boolean;
@@ -155,26 +155,27 @@ const SearchFriendListComponent = () => {
 
   const queryClient = useQueryClient();
 
-  const { user } = useCurrentUser();
+  //const { currentUser } = useCurrentUser();
   const nameInputRef = useRef<HTMLInputElement>(null)
   const [searchTerm, setSearchTerm] = useState<string>("")
 
-  // const {
-  //   data: fetchedUsers,
-  //   isLoading,
-  //   isFetching,
-  //   refetch,
-  // } = useQuery({
-  //   ...fetchUsers(searchTerm, user?.UserId || ""),
-  //   enabled: !!user?.UserId,
-  //   staleTime: 1000 * 5 * 60,
-  //   gcTime: 1000 * 5 * 60
-  // }) as { 
-  //   data: { data: User[] } | undefined; 
-  //   isLoading: boolean; 
-  //   isFetching: boolean;
-  //   refetch: () => void 
-  // }
+  const navigate = useNavigate();
+
+  const [currentUser] = useState<ServerUser>(() => {
+    const userObj = JSON.parse(sessionStorage.getItem("UserObj") || "");
+
+    if (userObj) return {
+      displayName: userObj.displayname,
+      username: userObj.username,
+      userId: userObj.userId,
+      email: userObj.email,
+      imgUrl: "" // will fix this later (as of writing may 10 12:38 am lmao)
+    } 
+
+    return {} as ServerUser
+  })
+
+  console.log(currentUser)
 
   const {
     data: fetchedUsers,
@@ -182,32 +183,81 @@ const SearchFriendListComponent = () => {
     isFetching,
     refetch
   } = useQuery({
-    queryKey: ["searchedUsers", searchTerm, user?.UserId],
-    queryFn: () => getUsers(searchTerm, user?.UserId || ""),
+    queryKey: ["searchedUsers", searchTerm, currentUser?.userId],
+    queryFn: () => getUsers(searchTerm, currentUser?.userId || ""),
     enabled: !!searchTerm,
     staleTime: 1000 * 5 * 60,
     gcTime: 1000 * 5 * 60
   })
 
+  const {
+    mutate: createDirectMessageMutate,
+    isPending
+  } = useMutation({
+    mutationKey: ["createDirectMessage"],
+    mutationFn: async (participants: ServerUser[]) => 
+      await createDirectChannel(participants),
+
+    onError: (error)  => {
+      console.error(error)
+
+    },
+
+    onSuccess: (response) => {
+      if (nameInputRef.current){
+        nameInputRef.current.value = ""
+      }
+
+      console.log(response)
+
+      // check current user's profile... 
+      // if "recipient" is other user then use their name in the URL
+
+      setSearchTerm("")
+      navigate(`/messages/${response?.data.directChannelId}`)
+    }
+  })
+
   const handleSearchSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!nameInputRef.current || !user?.UserId){
+    if (!nameInputRef.current || !currentUser?.userId){
       console.error("Cannot Perform search. Please try again later")
       return;
     }
 
     console.log("Fetching users...")
     console.log("name: ", nameInputRef.current.value)
+
+    // remove existing cache to clear up results
+    queryClient.removeQueries({queryKey: ["searchedUsers"]})
+
     setSearchTerm(nameInputRef.current.value)
 
     refetch();
-    // remove existing cache to clear up results
-    queryClient.removeQueries({queryKey: ["searchedUsers"]})
+    
+  }
+
+  const handleCreateDirectMessage = async (participants: ServerUser[]) => {
+
+    if (!currentUser){
+      console.log("Cannot proceed with empty user")
+      return;
+    }
+    
+    if (participants.length == 0){
+      console.error("Cannot proceed with 0 users in room")
+      return;
+    }
+
+    console.log("the participants: ", participants)
+    
+    createDirectMessageMutate(participants)
+
   }
 
   // Loader Skeleton
-  if (isLoading && !isFetching){
+  if ((isLoading && !isFetching) || isPending){
     return <SearchUsersListLoader />
   }
   console.log(fetchedUsers)
@@ -240,9 +290,9 @@ const SearchFriendListComponent = () => {
           <div className='mt-4'>
             {
               fetchedUsers?.data?.length >= 1 ?
-                fetchedUsers?.data.map((user: User) => (
+                fetchedUsers?.data.map((user: ServerUser) => (
                   <div 
-                    key={user.UserId}
+                    key={user.userId}
                     className='flex items-center justify-between
                     hover:bg-white/10 rounded-md p-2'
                     >
@@ -253,7 +303,7 @@ const SearchFriendListComponent = () => {
                         ? <img 
                             src={user.imgUrl} 
                             alt={user.displayName} 
-                            className='h-10 w-10 rounded-full'
+                            className='h-10 w-10 rounded-full object-cover'
                           />
                         : <BsDiscord 
                           className='h-10 w-10 bg-indigo-500 rounded-full p-1'
@@ -272,7 +322,9 @@ const SearchFriendListComponent = () => {
                       <button 
                         type='button'
                         className='bg-[#35363b] hover:bg-white/10 duration-100 p-2 
-                        cursor-pointer rounded-lg mx-2 w-30'>
+                        cursor-pointer rounded-lg mx-2 w-30'
+                        onClick={() => handleCreateDirectMessage([user, currentUser])}
+                        >
                           Send Message
                         </button>
 
