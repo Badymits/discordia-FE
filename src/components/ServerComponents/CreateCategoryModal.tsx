@@ -245,7 +245,7 @@ const CreateCategoryModal = ({
                 <div className='mr-2'>
                   <img 
                     src="https://api.dicebear.com/7.x/avataaars/svg?seed=1" 
-                    alt={user?.userName}
+                    alt={user?.username}
                     className='h-6 w-6 rounded-full bg-gray-100 ' 
                   />
                 </div>
@@ -256,7 +256,7 @@ const CreateCategoryModal = ({
                     <div>
                       {user?.Firstname} 
                       <span className='font-thin text-gray-400 ml-2'>
-                        {user?.userName}
+                        {user?.username}
                       </span>
                     </div>
                   )

@@ -32,8 +32,8 @@ const ProfileSettings = ( {closeSettings}: any) => {
   const {
     data: userData,
   } = useQuery({
-    ...fetchUser(user?.UserId || ""),
-    enabled: !!user?.UserId
+    ...fetchUser(user?.userId || ""),
+    enabled: !!user?.userId
   })
 
   const UserSettings = [

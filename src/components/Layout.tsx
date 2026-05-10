@@ -51,8 +51,8 @@ const Layout = () => {
     data: userData,
     isLoading
   } = useQuery({
-    ...fetchUser(user?.UserId || ""),
-    enabled: !!user?.UserId
+    ...fetchUser(user?.userId || ""),
+    enabled: !!user?.userId
   })
 
   console.log(userData?.data)

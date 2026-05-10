@@ -43,14 +43,14 @@ const AddServerModal = ({closeModal}: any) => {
     data: userData,
     isLoading
   } = useQuery({
-    ...fetchUser(user?.UserId || ""),
-    enabled: !!user?.UserId
+    ...fetchUser(user?.userId || ""),
+    enabled: !!user?.userId
   })
 
 
-  const [newServerName, setNewServerName] = useState<string>(`${userData?.data.userName}'s Server`)
+  const [newServerName, setNewServerName] = useState<string>(`${userData?.data.username}'s Server`)
   const [createServerStep, setCreateServerStep] = useState<number>(1)
-  const [serverInvite, setServerInvite] = useState<string>(`${user?.userName}'s Server`)
+  const [serverInvite, setServerInvite] = useState<string>(`${user?.username}'s Server`)
 
   const [imageUrl, setImageUrl] = useState<string>("") // image display (for src attribute)
   const [imageFile, setImageFile] = useState<File>()
@@ -369,12 +369,12 @@ const AddServerModal = ({closeModal}: any) => {
 
     onMutate: async (createdServer) => {
       // cancel outgoing refetches to handle newly created server
-      await queryClient.cancelQueries({queryKey: ["servers", user?.UserId]})
+      await queryClient.cancelQueries({queryKey: ["servers", user?.userId]})
 
-      const previousServers = queryClient.getQueryData(["servers", user?.UserId])
+      const previousServers = queryClient.getQueryData(["servers", user?.userId])
 
       if (previousServers){
-        queryClient.setQueryData(["servers", user?.UserId], (oldServers: Server[]) => {
+        queryClient.setQueryData(["servers", user?.userId], (oldServers: Server[]) => {
           if (!oldServers) return []
 
           return [oldServers, {
@@ -388,7 +388,7 @@ const AddServerModal = ({closeModal}: any) => {
 
     // rollback to old list on failed response
     onError: (context) => {
-      queryClient.setQueryData(["servers", user?.UserId], context.message)
+      queryClient.setQueryData(["servers", user?.userId], context.message)
     },
 
     onSuccess: (response, _variables, context) => {
@@ -438,6 +438,12 @@ const AddServerModal = ({closeModal}: any) => {
       return;
     }
 
+    // if there is existing imageURL and user wants to select new one
+    // make sure to cleanup old links
+    if (imageUrl){
+      URL.revokeObjectURL(imageUrl)
+    }
+
     const imgUrl = URL.createObjectURL(file) 
 
     console.log("Converting to URL...", imgUrl)
@@ -462,7 +468,7 @@ const AddServerModal = ({closeModal}: any) => {
     const payload: CreateServer = {
       serverOwner: userData?.data.userName || "",
       serverName: newServerName,
-      userId: user.UserId
+      userId: user.userId
     }
 
     if (imageFile){

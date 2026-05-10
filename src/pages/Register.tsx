@@ -76,7 +76,7 @@ const Register = () => {
         username: response.data.username,
         displayname: response.data.displayName,
         email: response.data.email,
-        userId: response.data.UserId
+        userId: response.data.userId
       }
 
       assignValuesToUser({
@@ -117,7 +117,7 @@ const Register = () => {
       user.username = username;
       user.displayName = displayName;
       user.email = email;
-      user.UserId = userId;
+      user.userId = userId;
     }
   }
 

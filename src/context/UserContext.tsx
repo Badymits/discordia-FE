@@ -48,7 +48,7 @@ export default function UserContextProvider(
           username: parsedObj.username,
           displayName: parsedObj.displayname,
           email: parsedObj.email,
-          UserId: parsedObj.userId
+          userId: parsedObj.userId
           
         };
       } catch (err) {

@@ -26,13 +26,13 @@ const EditProfile = () => {
   const { 
     data: fetchedUserData 
   } = useQuery({
-    ...fetchUser(user?.UserId || ""),
-    enabled: !!user?.UserId
+    ...fetchUser(user?.userId || ""),
+    enabled: !!user?.userId
   })
 
   const [userDisplayValues, setUserDisplayValues] = useState<User>(
     {
-      UserId: fetchedUserData?.data.UserId,
+      userId: fetchedUserData?.data.UserId,
       username: fetchedUserData?.data.username,
       displayName: fetchedUserData?.data.displayName,
       email: fetchedUserData?.data.email,
@@ -62,17 +62,17 @@ const EditProfile = () => {
   } = useMutation({
     mutationKey: ["updateUser"],
     mutationFn: async (userData: FormData) => await updateUser(
-      userData, user?.UserId || ""
+      userData, user?.userId || ""
     ),
 
     onMutate: async (userInfo) => {
-      await queryClient.cancelQueries({queryKey: ["user", user?.UserId]})
+      await queryClient.cancelQueries({queryKey: ["user", user?.userId]})
 
-      const previousUserData = queryClient.getQueryData(["user", user?.UserId])
+      const previousUserData = queryClient.getQueryData(["user", user?.userId])
 
       if (!previousUserData) return;
 
-      queryClient.setQueryData(["user", user?.UserId], (oldUserData: User) => {
+      queryClient.setQueryData(["user", user?.userId], (oldUserData: User) => {
         return{
           ...oldUserData,
           displayName: userInfo.get("Displayname"),
@@ -91,13 +91,13 @@ const EditProfile = () => {
       setUploadedImage(undefined)
       
       console.log("Updated Information Successfully!")
-      queryClient.invalidateQueries({queryKey: ["user", user?.UserId]})
+      queryClient.invalidateQueries({queryKey: ["user", user?.userId]})
     },
     onError: (err, _newFormData, context) => {
       console.log("An Error Occurred while updating profile.", err)
 
       if (context?.previousUserData){
-        queryClient.setQueryData(["user", user?.UserId], context?.previousUserData)
+        queryClient.setQueryData(["user", user?.userId], context?.previousUserData)
       }
       
     }
@@ -109,7 +109,7 @@ const EditProfile = () => {
     if (!hasChanges) return;
 
     const userPayload: UserPayload = {
-      UserId: userDisplayValues.UserId,
+      UserId: userDisplayValues.userId,
       displayName: userDisplayValues.displayName || "",
       username: userDisplayValues.username,
       userBio: userDisplayValues.bio || "",
