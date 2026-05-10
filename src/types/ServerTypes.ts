@@ -1,10 +1,11 @@
 import type { UUIDTypes } from "uuid";
-import type { User } from "./User";
+import type { ServerUser, User } from "./User";
 
 export interface Server {
   serverId: number | string;
   serverName: string;
-  serverOwner?: User
+  serverOwner?: User;
+  serverInviteCode?: string;
   description: string;
   members: number; // will be removed lmao
   serverIcon?: string;
@@ -82,6 +83,7 @@ export interface Message {
   messageId?: string;
   channelId: string;
   userId: string;
+  type: string;
 
   userAvatar?: string; // receives url string
   displayName: string;
@@ -92,8 +94,8 @@ export interface Message {
   dateTimestamp?: string; // data type is converted in the backend
   messageTag?: MessageTag;
 
-  isReply?: boolean;
-  isContentWithImg?: boolean;
+  isReply: boolean;
+  isContentWithImg: boolean;
 }
 
 export interface ReplyMessage {
@@ -102,11 +104,18 @@ export interface ReplyMessage {
   userId: string;
   displayName: string;
   imgUrl?: string;
+  isContentWithImg: boolean
 }
 
 export interface MessageTag { 
   user: ServerMembers;
   role: string;
+}
+
+export interface DirectChannel {
+  channelCreated: string;
+  directChannelId: string;
+  directChannelParticipants: ServerUser[]
 }
 
 export interface MessageFileState{
