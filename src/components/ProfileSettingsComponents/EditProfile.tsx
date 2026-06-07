@@ -32,7 +32,7 @@ const EditProfile = () => {
 
   const [userDisplayValues, setUserDisplayValues] = useState<User>(
     {
-      userId: fetchedUserData?.data.UserId,
+      userId: fetchedUserData?.data.userId,
       username: fetchedUserData?.data.username,
       displayName: fetchedUserData?.data.displayName,
       email: fetchedUserData?.data.email,
@@ -62,7 +62,7 @@ const EditProfile = () => {
   } = useMutation({
     mutationKey: ["updateUser"],
     mutationFn: async (userData: FormData) => await updateUser(
-      userData, user?.userId || ""
+      userData, userDisplayValues.userId || ""
     ),
 
     onMutate: async (userInfo) => {
@@ -109,7 +109,7 @@ const EditProfile = () => {
     if (!hasChanges) return;
 
     const userPayload: UserPayload = {
-      UserId: userDisplayValues.userId,
+      userId: userDisplayValues.userId,
       displayName: userDisplayValues.displayName || "",
       username: userDisplayValues.username,
       userBio: userDisplayValues.bio || "",
@@ -299,7 +299,7 @@ const EditProfile = () => {
                 }
                 
 
-                {/* 2. ANG INPUT FILE (Naka-tago dapat 'to) */}
+                {/* INPUT FILE */}
                 <input 
                   type="file"
                   ref={inputFileRef}
@@ -311,7 +311,7 @@ const EditProfile = () => {
                   className="hidden" 
                 />
 
-                {/* 3. ANG OVERLAY (Hover effect / Pencil icon) */}
+                {/* OVERLAY (Hover effect / Pencil icon) */}
                 <div 
                   className="opacity-0 hover:opacity-100 bg-black/40 h-24 w-24 rounded-full 
                   absolute -top-10 z-40 cursor-pointer flex items-center justify-center"
@@ -401,7 +401,7 @@ const EditProfile = () => {
                 disabled={isPending}
                 type="button"
                 className="text-[#7289DA] hover:underline 
-                cursor-pointer mx-6 disabled:text-[#0c132c]"
+                cursor-pointer mx-6 disabled:text-[#0c132c] disabled:pointer-events-none"
                 onClick={() => {
                   setHasChanges(false)
                   setUserDisplayValues(fetchedUserData?.data)
@@ -415,7 +415,7 @@ const EditProfile = () => {
                 disabled={isPending}
                 className="bg-green-600 rounded-lg p-1 px-2
                 hover:bg-green-700 duration-100 cursor-pointer
-                disabled:bg-green-900
+                disabled:bg-green-900 disabled:pointer-events-none
                 "
                 onClick={handleUpdateUser}
               >
