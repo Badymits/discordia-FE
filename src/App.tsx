@@ -28,7 +28,7 @@ function App() {
                   {/* When opening discord, it shows friend list and activity feed of friends. */}
                   <Route element={<HomeLayout />}>
                     <Route index element={<Home />}/>
-                    <Route path="/messages/:username" element={<DirectMessage />}/>
+                    <Route path="/messages/:directChannelId" element={<DirectMessage />}/>
                   </Route>
 
                   <Route path="/server/:serverName/:serverId" element={<ServerComponents />} />  
