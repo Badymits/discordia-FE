@@ -100,13 +100,14 @@ const CreateChannelModal = (
     console.log("Creating Channel...")
     setServerMembers([])
 
-    if (!selectedCategoryId) return;
+    if (!selectedCategoryId || !serverId) return;
 
     const payload: CreateChannelPayload = {
       categoryId: selectedCategoryId,
       channelName: channelName,
       icon: textChannelOption,
-      channelType: textChannelOption
+      channelType: textChannelOption,
+      serverId: serverId
     }
 
     createChannelMutation(payload)
