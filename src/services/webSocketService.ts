@@ -1,13 +1,15 @@
 import {useEffect, useRef, useReducer, useCallback} from 'react';
 import {Client, type IMessage} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import type { Message } from '../types/ServerTypes';
+import type { Message, NotificationPayload } from '../types/ServerTypes';
 
 interface PayloadMessage extends Message {
   message: string;
 }
 
+
 export type SubscriptionCallback = (message: PayloadMessage) => void;
+export type NotificationCallback = (notification: NotificationPayload) => void;
 
 type State = {
   client: Client | null,
@@ -97,7 +99,7 @@ export const useWebSocketService = (
   }, [state.client, webSocketUrl, onConnectCallback, onErrorCallback])
 
   const subscribe = useCallback(
-    (destination: string, callback: SubscriptionCallback) => {
+    (destination: string, callback: SubscriptionCallback | NotificationCallback) => {
       
       const client = clientRef.current;
 
@@ -109,22 +111,27 @@ export const useWebSocketService = (
         return;
       }
 
-      const subscription = client.subscribe(
-        destination, (message: IMessage) => {
-          if (message.body){
+      if (isConnected.current === true){
+        console.log("Running")
+        const subscription = client.subscribe(
+          destination, (message: IMessage) => {
+            if (message.body){
 
-            console.log("body: ", JSON.parse(message.body))
-            callback(JSON.parse(message.body))
+              console.log("body: ", JSON.parse(message.body))
+              callback(JSON.parse(message.body))
+            }
           }
-        }
-      )
+        )
 
-      console.log("subscription data: ", subscription)
+        console.log("subscription data: ", subscription)
 
-      dispatch({
-        type: "ADD_SUBSCRIPTION",
-        payload: {destination, subscription}
-      })
+        dispatch({
+          type: "ADD_SUBSCRIPTION",
+          payload: {destination, subscription}
+        })
+      }
+
+      
       
     }, [state.subscriptions]
   )
