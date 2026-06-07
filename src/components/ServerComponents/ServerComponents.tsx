@@ -1,30 +1,21 @@
-import { useContext, useState, useRef, useEffect, type ChangeEvent, type MouseEvent } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useContext, useState, useRef, useEffect, type MouseEvent } from "react";
 import { ServerContext } from "../../context/ServerContext";
 import { useParams } from "react-router-dom";
-import { v4 as uuidv4, type UUIDTypes } from "uuid";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Tooltip } from "react-tooltip";
 
 import { AiOutlineUsergroupAdd, AiOutlineAudioMuted } from "react-icons/ai";
-import { RiArrowDownSLine, RiFileUploadLine } from "react-icons/ri";
-import { RiHashtag, RiDeleteBinLine  } from "react-icons/ri";
+import { RiArrowDownSLine } from "react-icons/ri";
+import { RiHashtag  } from "react-icons/ri";
 import { CiSettings } from 'react-icons/ci'
-import { IoMdAdd, IoMdAddCircle, IoMdCloseCircleOutline  } from "react-icons/io";
+import { IoMdAdd, IoMdAddCircle  } from "react-icons/io";
 import { FaSearch, FaEllipsisH, FaFolderPlus } from "react-icons/fa";
-import { TiPin } from "react-icons/ti";
-import { GiFilmSpool } from "react-icons/gi";
-import { FiPlus } from "react-icons/fi";
 import { CgClose } from "react-icons/cg"
-import { 
-  IoIosNotifications,
-  //IoIosNotificationsOff 
-} from "react-icons/io";
-import { MdModeEdit } from "react-icons/md";
-import { HiHashtag, HiLockClosed, HiUsers } from "react-icons/hi";
-import { BsArrow90DegLeft, BsDiscord } from "react-icons/bs";
-import { BsArrow90DegRight } from "react-icons/bs";
+
+import { HiHashtag, HiLockClosed } from "react-icons/hi";
+import { BsDiscord } from "react-icons/bs";
 import { PiSpeakerSimpleHighLight } from "react-icons/pi";
-import { FaRegImage } from "react-icons/fa6";
 
 import  { voiceChannelMembers } from "../../utils/DummyData";
 import CreateChannelModal from "../ServerComponents/CreateChannelModal";
@@ -33,52 +24,28 @@ import CreateCategoryModal from "./CreateCategoryModal";
 import type { 
   Category, 
   Channel, 
-  Message, 
-  MessageFileState,
-  ReplyMessage,
-  ServerMembers 
+  ServerMembers, 
 } from "../../types/ServerTypes";
 
 import { useCurrentUser } from "../../context/UserContext";
-import { useWebSocketContext } from "../../context/WebSocketContext";
 import { 
   fetchChannel, 
-  fetchMessages, 
   fetchServer, 
 } from "../../query/serverQueries";
-import { uploadImage } from "../../services/serverService";
 import ServerSettings from "./ServerSettings";
-import ChannelSettings from "./ChannelSettings";
+import ChannelSettings from "./ChannelSettings"; 
 import ServerComponentLoader from "../LoadingComponents/ServerComponentLoader";
 import CategorySettings from "../CategorySettingsComponents/CategorySettings"
 import { CategorySettingsMenu } from "../../utils/PanelSettings";
 import type { ServerUser, User } from "../../types/User";
+import MessagesComponent from "../MessagesComponent";
+import { convertObj } from "../../utils/ConvertedObject";
 
-interface PayloadTest{
-  formData: FormData;
-  messageId: string;
-}
 
-// Declaring message formatter once only since its rendered outside component
-const messageDateFormatter = new Intl.DateTimeFormat('en-US', {
-  month: '2-digit',
-  day: '2-digit',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: false,
-})
-
-const timeFormatter = new Intl.DateTimeFormat('en-US', {
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: false,
-})
 
 
 const ServerComponents = () => {
 
-  const queryClient = useQueryClient();
 
   const [activeChannel, setActiveChannel] = useState<string>()
   const [showMemberList, setShowMemberList] = useState<boolean>(false)
@@ -95,17 +62,6 @@ const ServerComponents = () => {
 
   const [categoryName, setCategoryName] = useState<string>("")
   const [categoryId, setCategoryId] = useState<string | undefined>("")
-  const [messageOptionsPanel, setMessageOptionsPanel] = useState(false)
-
-  const [imgList, setImgList] = useState<MessageFileState[]>([])
-  const [replyMessageObject, setReplyMessageObject] = useState<ReplyMessage>({
-    messageId: "",
-    message: "",
-    userId: "",
-    displayName: "",
-    imgUrl: "",
-    isContentWithImg: false
-  })
 
   const [showCategorySettings, setShowCategorySettings] = useState(false)
   const [panelCoords, setPanelCoords] = useState({x: 0, y: 0})
@@ -115,13 +71,6 @@ const ServerComponents = () => {
     // setIsInVoice,
     // setJoinedVoiceChannel
   } = useCurrentUser();
-
-  const { 
-    send,
-    subscribe, 
-    unsubscribe,
-    isConnected
-  } = useWebSocketContext()
 
   const serverContext = useContext(ServerContext)
 
@@ -192,86 +141,10 @@ const ServerComponents = () => {
     staleTime: 1000 * 60 * 5,
   })
 
-  
-  const {data: channelMessages} = useQuery({
-    ...fetchMessages(
-      activeChannel ?? ""
-    ),
-    enabled: !!activeChannel,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 5,
-  })
-
-  const {
-      mutateAsync: uploadImageMutation,
-      isPending,
-      variables: mutatedVariable,
-      reset
-    } = useMutation({
-
-    mutationKey: ["uploadImage"],
-    mutationFn: async({formData, messageId}: PayloadTest) => await uploadImage(formData, messageId),
-
-    onMutate: async (messageData) => {
-      console.log(messageData)
-
-      await queryClient.cancelQueries({queryKey: ["channelMessages", activeChannel]})
-
-      const messages = queryClient.getQueryData(["channelMessages", activeChannel])
-
-      let fileUrl = "";
-
-      const imageFile = messageData.formData.get("image");
-
-      if (imageFile instanceof File) {
-        fileUrl = URL.createObjectURL(imageFile);
-      }
-
-      queryClient.setQueryData(["channelMessages", activeChannel], (messages: Message[]) => {
-        if (!messages) return [];
-
-        return messages.map((msg) => 
-          msg.messageId === messageData.messageId
-          ? {...msg, messageImgUrl: fileUrl}
-          : msg
-        )
-      })
-      return { messages, fileUrl }
-    },
-
-    // prefix unused params with underscore to remove ESlint warnings
-    onError: (_error, _variables, context)=> {
-      queryClient.setQueryData(["channelMessages", activeChannel], context?.messages)
-    },
-
-    onSuccess: (response, _variables, context) => {
-      console.log(response)
-
-      // remove from browser storage to prevent memory leak 
-      if (context?.fileUrl) {
-        URL.revokeObjectURL(context.fileUrl);
-      }
-
-      // replace optimized update with the actual URL created in the backend
-      queryClient.setQueryData(["channelMessages", activeChannel], (messages: Message[]) => {
-        if (!messages) return [];
-
-        return messages.map((msg) => 
-          msg.messageId === response.messageId
-          ? {...msg, messageImgUrl: response.messageImgUrl}
-          : msg
-        )
-      })
-
-      // returns mutattion to idle state
-      reset();
-    },
-  })  
 
   console.log("the server: ", serverChannels)
   console.log("general channel members: ", serverChannels?.serverMembers)
   console.log("the channel: ", selectedChannel)
-  console.log("Fetched messages from query: ", channelMessages)
 
 
   console.log({
@@ -318,7 +191,6 @@ const ServerComponents = () => {
 
   const createChannelRef = useRef<HTMLDivElement>(null)
   const latestMessage = useRef<HTMLDivElement>(null)
-  const inputFileRef = useRef<HTMLInputElement>(null)
 
   // Side panel that contains server member details 
   const memberPanel = useRef<HTMLDivElement>(null!)
@@ -328,9 +200,6 @@ const ServerComponents = () => {
 
   const serverSettingsPanel = useRef<HTMLDivElement>(null!)
 
-  const messageInputRef = useRef<HTMLInputElement>(null)
-
-  const replyMessageRef = useRef<HTMLDivElement>(null);
 
   // on channel change, automatically position view to latest message of channel
   const scrollToBottom = () => {
@@ -339,71 +208,6 @@ const ServerComponents = () => {
 
   console.log(selectedChannel?.channelName)
 
-  const handleInputFileRefClick = () => {
-    if (!inputFileRef.current) return;
-    inputFileRef.current.click();
-  }
-
-  const handleImageInput = (e: ChangeEvent<HTMLInputElement>) => {
-    if(!e.target.files?.[0]) return;
-
-    const files = e.target.files;
-
-    // 1st safety check if theres no file inside the event target
-    if (!files || files.length === 0){
-      console.log("No file detected!")
-      return;
-    }
-
-    const file = files[0];
-
-    // disallow any type of file (for now)
-    if (!file.type.startsWith("image/")){
-      console.log("Only Image is accepted!")
-      return;
-    }
-
-    const maxSize = 5 * 1024 * 1024 // 5MB size
-    if (file.size > maxSize){
-      console.log("Image too large! Limit size is 5MB only!")
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(file)
-
-    console.log("file: ", file)
-
-
-    setImgList((prev) => [
-      ...prev,
-      {
-        id: uuidv4(),
-        fileName: file.name,
-        objectURL: objectUrl,
-        entity: file
-      }
-    ])
-    setMessageOptionsPanel(false)
-
-  }
-
-  const removeImgFromList = (id: UUIDTypes) => {
-    if (!id){
-      return;
-    }
-
-    const imageToRemove = imgList.find(img => img.id === id);
-  
-    if (imageToRemove) {
-      //  remove from memory in browser's storage
-      URL.revokeObjectURL(imageToRemove.objectURL);
-    }
-
-    const filteredImgList = 
-      imgList.filter(img => img.id !== id)
-
-    setImgList(filteredImgList)
-  }
 
 
   const LockedChannelIcon = () => {
@@ -422,17 +226,6 @@ const ServerComponents = () => {
   };
 
   
-
-  const formatDateTimestamp = (isoString: string) => {
-    if (!isoString) return "";
-    const date = new Date(isoString)
-    return messageDateFormatter.format(date).replace(",", "");
-  }
-
-  const formatTimeStamp = (isoString: string) => {
-    const date = new Date(isoString).getTime();
-    return timeFormatter.format(date)
-  } 
 
   // to return channel icon when saved/ stringified in session storage since ReactNode cannot be stringified.
   const iconMap = {
@@ -533,9 +326,7 @@ const ServerComponents = () => {
   useEffect(() => {
     scrollToBottom();
   }, [
-    channelMessages, 
     activeChannel,
-    imgList.length
   ]); // Ititrigger to pag nagbago ang messages O ang channel ID
 
   useEffect(() => {
@@ -552,100 +343,6 @@ const ServerComponents = () => {
     }
     
   }, [isInVoice, currentUser.userId])
-
-
-  console.log(replyMessageObject)
-  useEffect(() => {
-
-    if (!serverId || !selectedChannel || !activeChannel) return;
-
-    const formatMessage = (message: Message) => {
-
-      const formattedDate = 
-        new Date(message.dateTimestamp || Date.now()).toISOString();
-
-      
-      const newMessageObj: Message = {
-        serverId: message.serverId,
-        messageId: message.messageId,
-        displayName: message.displayName,
-        message: message.message,
-        userAvatar: message.userAvatar,
-        dateTimestamp: formattedDate,
-        userId: message.userId,
-        channelId: activeChannel,
-        messageImgUrl: message.messageImgUrl || "",
-        isContentWithImg: message.isContentWithImg,
-        isReply: message.isReply,
-        type: "server"
-      }
-
-      
-      if (message.isReply){
-
-        const repliedToObj: ReplyMessage = {
-          messageId: message.repliedTo?.messageId || "",
-          message: message.repliedTo?.message || "",
-          userId: message.repliedTo?.userId || "",
-          displayName: message.repliedTo?.displayName || "",
-          imgUrl: message.repliedTo?.imgUrl,
-          isContentWithImg: !!message.repliedTo?.isContentWithImg
-        }
-
-        newMessageObj.repliedTo = repliedToObj
-      }
-
-      // Message Object will always refer to User ID instead of member ID.
-      // Messages are not contextual but rather ownership type (when user leaves server, messages will retain)
-      if (newMessageObj.isContentWithImg && 
-          message.userId === currentUser.userId && 
-          message.messageId)
-        {
-        console.log("Message w/ img detected. ")
-        handleUploadImage(message.messageId)
-      } 
-
-      return newMessageObj
-    }
-
-    const checkAndSubscribe = setInterval(() => {
-      subscribe(`/topic/${serverId}/${activeChannel}`, (rawMessage) => {
-        console.log("received message: ", rawMessage)
-
-        const message = formatMessage(rawMessage)
-
-        console.log("Formatted message: ", message)
-        queryClient.setQueryData(
-          ["channelMessages", activeChannel], (oldMessages: Message[]) => {
-          
-          // filter messages in the spread operator to prevent double messages from sending.
-          // this is to ensure that the setQueryData located in uploadImageMutation pushes through 
-          // without disrupting this process.
-          return [
-            ...oldMessages.filter(
-              m => m.messageId !== message.messageId), 
-              message // then append new message at the end
-            ]; 
-          
-        })
-      })
-      clearInterval(checkAndSubscribe);
-    }, 100)
-
-    return () => {
-      clearInterval(checkAndSubscribe)
-      unsubscribe(`/topic/${serverId}/${activeChannel}`)
-    }
-    
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-      serverId, 
-      selectedChannel,
-      subscribe,
-      activeChannel,
-      imgList
-    ]
-  );
 
   // handles two set states instead of setting both in onClick attribute
   const handleSetActiveChannelAndVoiceChannel = (
@@ -718,114 +415,7 @@ const ServerComponents = () => {
   //   })
   // }
 
-  const sendMessage = async (e: React.SubmitEvent<HTMLFormElement>) => {
 
-    e.preventDefault();
-    console.log("Message Received: ", messageInputRef.current)
-
-    if (
-      !isConnected.current || 
-      !currentUser ||
-      !serverId ||
-      !activeChannel || 
-      messageInputRef.current?.value === undefined
-    ) return
-
-
-    const messageBody: Message = {
-      serverId: serverId,
-      channelId: activeChannel,
-      userId: currentUser.userId,
-      displayName: currentUser.displayName,
-      message: messageInputRef.current.value,
-      isContentWithImg: imgList.length >= 1,
-      isReply: !!replyMessageObject.messageId,
-      type: "server"
-    }
-
-    if (replyMessageObject.messageId){
-
-      const repliedToObj: ReplyMessage = {
-        messageId: replyMessageObject.messageId,
-        message: replyMessageObject.message,
-        userId: replyMessageObject.userId,
-        displayName: replyMessageObject.displayName,
-        isContentWithImg: replyMessageObject.isContentWithImg
-      }
-      messageBody.repliedTo = repliedToObj
-    }
-
-  
-    console.log("testing payload: ", messageBody)
-
-    // WS endpoint configured in backend
-    send(`/discordia/sendMessage`, messageBody)
-    messageInputRef.current.value = ""
-    setReplyMessageObject({
-      messageId: "",
-      message: "",
-      userId: "",
-      displayName: "",
-      isContentWithImg: false
-    })
-  }
-
-  const handleUploadImage = (messageId: string) => {
-
-    const formData = new FormData();
-
-    if (imgList.length === 0 || !serverId || !activeChannel){
-      return null;
-    }
-
-    // image file type is multipart/file, which was set in the serverServices file
-    imgList.forEach((img) => {
-      if (img.entity){
-        formData.append("image", img.entity)
-      }
-    })
-
-    // need to tell the backend that they will receive a JSON type for these fields
-    formData.append("serverId", new Blob([JSON.stringify(serverId)], 
-      {
-        type: "application/json"
-      }
-    ))
-
-    formData.append("channelId", new Blob([JSON.stringify(activeChannel)],
-      {
-        type: "application/json"
-      }
-    ))
-
-    
-    try {
-      // immediately clear images list to clean up UI images list
-      //  in the text input container
-      setImgList([])
-
-      uploadImageMutation({formData, messageId});
-
-    } catch (error) {
-      console.error("Upload failed:", error);
-      return null;
-    }
-  }
-
-  const compareMessageDate = (prevMsg: Message, currentMsg: Message) => {
-
-    if (!prevMsg.dateTimestamp || !currentMsg.dateTimestamp) return;
-
-    // calculates numbers instead and is much cheaper compared to prev setup 
-    // (I converted it to date -> string then back to date then string lmao)
-    const difference = Math.abs(
-      new Date(currentMsg.dateTimestamp).getTime() - 
-      new Date(prevMsg.dateTimestamp).getTime()) > 60000;
-
-
-    // if greater than 1 min then return true, else false
-    return difference
-  }
 
   // sets active channel to general when other channels have been deleted
   const selectOnChannelDelete = () => {
@@ -838,33 +428,6 @@ const ServerComponents = () => {
       setActiveChannel("")
     }
   }
-
-  // making the border of the div to be the only clickable area of the div
-  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
-
-    const div = replyMessageRef.current;
-
-    let rect;
-    if (div){
-      rect = div.getBoundingClientRect();
-      const borderWidth = 32; // Match your CSS border width
-
-      // Calculate click position relative to the div
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-
-      // Check if click is within the border area
-      const isClickInBorder =
-        clickX < borderWidth ||
-        clickY < borderWidth ||
-        clickX > rect.width - borderWidth ||
-        clickY > rect.height - borderWidth;
-
-      if (isClickInBorder) {
-        alert('Border clicked!');
-      }
-    }
-  };
 
 
   const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
@@ -879,8 +442,7 @@ const ServerComponents = () => {
   if (status === "pending" || fetchStatus === "fetching" || isLoading){
     return <ServerComponentLoader />
   }
-
-  console.log("Server member details: ", serverMemberDetails)
+  console.log("selectedChannel: ", selectedChannel)
 
   return (
     <div className="flex w-full h-screen">
@@ -1168,418 +730,14 @@ const ServerComponents = () => {
         // show chat container and member list when in 
         // different channels (EVEN WHEN THEY ARE IN THE VOICE CHAT)
         <div className="w-full flex h-screen">
-          <div className="bg-[#23272a] flex flex-col flex-1 border-r 
-            border-[#363c41] text-[#DBDEE1] h-screen overflow-hidden">
-            
-            {/* Chat container header Icons/Options */}
-            <div className=" border-b border-[#363c41] w-full p-2.75">
 
-              <div className="flex items-center justify-between">
-                <div className="font-semibold flex items-center justify-center">
-                  <div className="flex items-center">
-                    {iconMap[selectedChannel?.icon as keyof typeof iconMap]}
-                    {selectedChannel?.channelName}
-                    
-                  </div>
-                  {
-                    selectedChannel?.channelTopic && <span className="h-1 w-1 rounded-full mx-2 bg-gray-600"></span>
-                  }
-                  
-                  {
-                    selectedChannel?.channelTopic && (
-                      <p 
-                        onClick={() => setOpenChannelTopic(true)}
-                        className="text-gray-400 text-sm cursor-pointer">
-                          {selectedChannel?.channelTopic}
-                      </p>
-                    )
-                  }
-                  
-                </div>
-
-                <div className="flex items-center text-2xl gap-6">
-
-                  <IoIosNotifications className="cursor-pointer"/>
-                  <GiFilmSpool className="cursor-pointer"/>
-                  <TiPin className="cursor-pointer"/>
-                  <HiUsers 
-                    data-tooltip-id="members"
-                    data-tooltip-content={
-                      showMemberList ? "Hide member list" : "Show member list"
-                    }
-                    onClick={() => setShowMemberList(!showMemberList)}
-                    className="cursor-pointer hover:bg-white/5 rounded-full"
-                  />
-                </div>
-              </div>
-
-              <Tooltip id="members" place="bottom" className="z-50"/>
-            </div>
-
-
-            <div className="flex-1 flex flex-col w-full min-h-0 overflow-hidden">
-
-              {/* Chat container */}
-              <div className="flex-1 overflow-y-auto  scrollbar-thin scrollbar-thumb-[#1e1f22] 
-                scrollbar-track-transparent hover:scrollbar-thumb-[#a1a1a1]">
-                  
-                <div className="h-full flex flex-col justify-end p-4">
-                  <p className="text-7xl bg-white/10 w-18 rounded-full">
-                    {iconMap[selectedChannel?.icon as keyof typeof iconMap]}
-                  </p>
-
-                  <p className="text-4xl py-2 font-bold">Welcome to #{selectedChannel?.channelName}!</p>
-                  <p>This is the start of the #{selectedChannel?.channelName} channel.</p>
-
-                  <button 
-                    type="button"
-                    className="bg-[#383a40] hover:bg-[#2e3035] text-white w-35 
-                    flex items-center justify-center gap-2
-                    my-2 py-2 rounded-lg cursor-pointer">
-                    <MdModeEdit />
-                    Edit Channel
-                  </button>
-                </div>
-
-                <hr className={`border border-[#363c41] mx-3 opacity-0
-                  ${channelMessages?.length > 1 && "mb-5 opacity-100"}`}></hr>
-                
-                {/* Messages render area */}
-
-                {
-                  isLoading && (
-                    <div className="flex-1 flex flex-col w-full min-h-0 mb-auto overflow-hidden">
-                      {[...Array(3)].map((_, i) => (
-                      <div key={i} className="mb-7">
-                        <div className="h-5 bg-[#202024] my-2 w-full animate-pulse gap-2 ml-1  rounded-md"></div>
-                        {[...Array(2)].map((_, index) => (
-                          <div key={index} className="h-7 bg-[#202024] my-2  animate-pulse gap-2 mx-4  rounded-md"></div>
-                        ))}
-                      </div>
-                    ))}
-                    </div>
-                  )
-                }
-
-                {/* renders when there are actual messages sent from BE and
-                  when messages that belong to the channel selected */}
-                {
-                  (
-                    (!isLoading &&
-                    channelMessages?.length > 0 &&
-                    channelMessages[0].channelId === selectedChannel?.channelId) &&
-                    (
-                      channelMessages.map((message: Message, i: number, channelMessages: Message[]) => {
-
-                        // check if its the very first message in channel.
-                        // if yes set value, else set null
-                        const prevMsg = i > 0 ? channelMessages[i - 1] : null;
-
-                        const isFirstMessage = i === 0;
-                        const isNewUser = prevMsg?.userId !== message.userId;
-
-                        let isOneMinApart;
-
-                        if (prevMsg){
-                          isOneMinApart = compareMessageDate(prevMsg, message)
-                        }
-
-                        
-                        // Master condition
-                        const shouldShowHeader = 
-                          isFirstMessage || isNewUser || isOneMinApart || message.isReply;
-
-                        return(
-                          <div
-                            key={message.messageId}
-                            className={`flex group relative 
-                              ${shouldShowHeader && "mt-5"}
-                              ${replyMessageObject.messageId === message.messageId 
-                                && "bg-[#2b2a5c]/60 border-l-2 border-indigo-400"}
-                              `}
-                            >
-                              
-                              {/* white background when hovering the content */}
-                              <div className={`flex items-center gap-2 group-hover:bg-white/10 
-                                w-full px-4`}>
-                                
-                                {/* User Avatar */}
-                                {
-                                  shouldShowHeader ?
-                                  <div className={`relative z-95
-                                  ${!message.isReply ? "place-self-start pt-1" : "pt-5" } `}>
-                                    {message.userAvatar === ""
-                                      ? <BsDiscord className="w-10 h-10 p-1 bg-indigo-500 rounded-full z-10"/>
-                                      : <img 
-                                          src={message.userAvatar}
-                                          alt={message.displayName}
-                                          className="w-10 h-10 rounded-full object-cover bg-gray-800" 
-                                        />
-                                    }
-                                      {/* member status */}
-                                      <span className="bg-green-400 h-2 w-2 absolute bottom-0 
-                                        left-7 rounded-full">
-                                      </span>
-                                  </div>
-
-                                  : <div className="opacity-0 group-hover:opacity-100 m-1 pr-1 text-xs text-gray-400">
-                                      {formatTimeStamp(message.dateTimestamp || "")}
-                                    </div>
-                                }
-                                
-                                
-                                <div className="block">
-                                  {/* Reply Message */}
-                                  {
-                                    message.isReply && (
-                                      <div className="text-sm flex items-center relative" >
-                                        {/* "L-shape" connector */}
-                                        <div className="bg-transparent h-10 w-8 hover:border-zinc-500
-                                          absolute -left-8 top-2 rounded-tl-lg border-t-2 border-l-2 cursor-pointer"
-                                          ref={replyMessageRef}
-                                          onClick={handleClick}
-                                          >
-                                        </div>
-
-                                        {/* Reply Message Details */}
-                                        <div className="flex items-center ">
-                                          {
-                                            message.userAvatar 
-                                            ? <img 
-                                              src={message.userAvatar} 
-                                              alt={message.displayName}
-                                              className="h-6.5 w-7 rounded-full p-0.5 mx-1"
-                                              />
-                                            : <BsDiscord className="w-4 h-4 rounded-full bg-indigo-500 p-0.5 mx-1"/>
-                                          }
-
-                                          <div className="cursor-pointer">
-                                            <p className="font-semibold inline-block hover:underline cursor-pointer">
-                                              {message.repliedTo?.displayName}&nbsp;
-                                            </p>
-                                            {message.repliedTo?.message}
-
-                                            {
-                                              message.repliedTo?.isContentWithImg && (
-                                                <FaRegImage className="inline-block mx-1"/>
-                                              )
-                                            }
-                                          </div>
-                                          
-                                        </div>
-                                        
-                                      </div>
-                                    )
-                                  }
-
-                                  {/* Display name and date time stamp */}
-                                  { 
-                                   shouldShowHeader &&
-                                    <p className="text-white ">
-                                      <span className="font-semibold hover:underline cursor-pointer">
-                                        {message.displayName}</span>&nbsp;
-
-                                      <span className="font-medium text-xs text-gray-400">
-                                        {formatDateTimestamp(message.dateTimestamp || "")}
-                                      </span>
-                                    </p>
-                                  }
-                                  <p className={` 
-                                    ${message.isContentWithImg && "pb-1"}`}>
-                                    {message.message}
-                                  </p>
-
-                                  {/* UI Animation loader for new messages with images */}
-                                  {
-                                    isPending &&
-                                    mutatedVariable.messageId === message.messageId &&
-                                    <div className="w-105 h-70 bg-gray-800 animate-pulse rounded-xl relative">
-                                      <div className="w-8 h-8 border-4 border-blue-500 absolute top-1/2 left-1/2
-                                        transform -translate-1/2 -translate-y-1/2 border-t-transparent 
-                                        rounded-full animate-spin">
-                                      </div>
-                                    </div>
-                                  }
-                                  
-                                  {/* Actual Image render */}
-                                  {
-                                    message.isContentWithImg &&
-                                    mutatedVariable?.messageId !== message.messageId && (
-                                      <div>
-                                        <img 
-                                          src={message.messageImgUrl} 
-                                          alt={message.displayName}
-                                          className="w-full max-w-105 max-h-96 rounded-lg mb-1.5" 
-                                        />
-                                      </div>
-                                    )
-                                  }
-                                </div> 
-                                
-                                {/* Message Options */}
-                                <div className="absolute -top-4 right-4 bg-[#2B2D31] 
-                                  text-lg flex items-center gap-2 p-1 opacity-0 
-                                  group-hover:opacity-100 rounded-md shadow-2x">
-                                  
-                                  {/* Reply Icon */}
-                                  <BsArrow90DegLeft 
-                                    data-tooltip-id="message-reply"
-                                    data-tooltip-content="Reply"
-                                    className="cursor-pointer p-0.5 
-                                    hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                                    onClick={() => setReplyMessageObject({
-                                      messageId: message.messageId || "",
-                                      message: message.message,
-                                      userId: message.userId,
-                                      displayName: message.displayName,
-                                      imgUrl: message.messageImgUrl,
-                                      isContentWithImg: message.isContentWithImg
-                                    })}
-                                  />
-
-                                  {/* Forward Icon */}
-                                  <BsArrow90DegRight 
-                                    data-tooltip-id="message-forward"
-                                    data-tooltip-content="Forward"
-                                    className="cursor-pointer p-0.5 
-                                    hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                                  />
-
-                                  {/* more options (copy text, add reaction, etc..) */}
-                                  <FaEllipsisH 
-                                    data-tooltip-id="message-more"
-                                    data-tooltip-content="More"
-                                    className="cursor-pointer p-0.5 
-                                    hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                                  />
-                                </div>
-
-                                <Tooltip id="message-reply" place="top" className="z-50"/>
-                                <Tooltip id="message-forward" place="top" className="z-50"/>
-                                <Tooltip id="message-more" place="left" className="z-50"/>
-                              </div>
-                          </div>
-                        )
-                      })
-                    )
-                  )
-                }
-
-                {/* When opening channel, for now, it will always show the latest message of the channel
-                not the default one where the user left of */}
-                <div ref={latestMessage} />
-              </div>
-              
-              {/* message input tag */}
-              <div className="p-4 flex-none relative">
-
-                {/* Reply Message Feature */}
-                {
-                  replyMessageObject.messageId && (
-                    <div className="bg-[#383a40] rounded-t-lg px-3 py-1 border-b-2 
-                    border-[#444c53] flex items-center justify-between">
-                      <p>Replying to&nbsp;
-                        <span className="text-gray-100 font-semibold">
-                          {replyMessageObject.displayName}
-                        </span>
-                      </p>
-                      <IoMdCloseCircleOutline 
-                        className=" cursor-pointer text-xl"
-                        onClick={() => setReplyMessageObject({
-                          messageId: "",
-                          message: "",
-                          userId: "",
-                          displayName: "",
-                          isContentWithImg: false
-                        })
-                        }
-                        />
-                    </div>
-                  )
-                }
-                
-                {/* Image/s containers */}
-                <div className={`bg-[#383a40] p-2 flex flex-col items-start 
-                ${replyMessageObject.messageId ? "rounded-b-lg" : "rounded-lg"} 
-                  justify-center relative`}>
-                  
-                  <div className="flex gap-5 items-center">
-                    {
-                      imgList?.length > 0 && (
-                        imgList?.map((img, i) => (
-                          <div key={i} className={`h-50 w-45 bg-[#202122] rounded-lg 
-                          relative flex flex-col items-center`}>
-                            <img 
-                              key={i}
-                              src={img.objectURL}
-                              alt={img.fileName} 
-                              className="h-[80%] w-[80%] rounded-md m-auto bg-gray-600 object-cover"
-                            />
-
-                            <div className="absolute -top-2 -right-2 z-50">
-                              <RiDeleteBinLine className="text-red-500 cursor-pointer 
-                              bg-[#212327] text-2xl rounded-md "
-                                data-tooltip-id="delete-message-file"
-                                data-tooltip-content="delete file"
-                                onClick={() => removeImgFromList(img.id)}
-                              />
-                            </div>
-
-                            <p className="font-light pb-1 truncate w-40">{img.fileName}</p>
-                          </div>
-                        ))
-                      )
-                    }
-                  </div>
-                  
-
-                  <div className="flex items-center relative w-full">
-                    <form action="" onSubmit={sendMessage} className="w-full">
-                      <input 
-                        type="text" 
-                        ref={messageInputRef}
-                        placeholder={`Message #${selectedChannel?.channelName}`}
-                        className="bg-transparent w-full pl-9 py-3 focus:outline-0"
-                      />
-                    </form>
-
-                    <FiPlus className="absolute top-2.5 text-3xl p-1 
-                      hover:bg-white/20 rounded-lg cursor-pointer duration-400"
-                      onClick={() => setMessageOptionsPanel(!messageOptionsPanel)}
-                    />
-                  </div>
-                  <Tooltip id="delete-message-file" place="top"/>
-                  
-                </div>
-
-                {
-                  messageOptionsPanel && (
-                    <div className="absolute bottom-15 left-8 bg-[#181d22] 
-                      shadow-xl p-3 border-[#363c41] border rounded-lg z-99">
-
-                      <button 
-                        type="button"
-                        onClick={handleInputFileRefClick}
-                        className="hover:bg-white/10 p-1 px-2 rounded-lg cursor-pointer">
-                        <RiFileUploadLine className="inline-flex mb-1 mr-2 "/>
-                        Upload a File
-                      </button>
-                    </div>
-                  )
-                }
-                <input 
-                  type="file"
-                  ref={inputFileRef}
-                  onChange={(e) => {
-                    handleImageInput(e)
-                  }}
-                  accept="image/*"
-                  className="hidden" 
-                />
-                
-              </div>
-            </div>
-          </div>
+          <MessagesComponent 
+            messageType="server"
+            conversationDetails={convertObj(selectedChannel || {} as Channel, "server")}
+            channelId={activeChannel || ""}
+            currentUser={currentUser}
+            key={serverId || ""}
+          />
           
           {/* Channel/Server Member list */}
           <div className={`bg-[#23272a] text-[#DBDEE1] shrink-0 px-4
