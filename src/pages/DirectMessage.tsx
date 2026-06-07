@@ -1,46 +1,85 @@
-
-import { useParams } from 'react-router-dom'
-import { useServerContext } from '../context/ServerContext'
-import { useCurrentUser } from '../context/UserContext';
-
-import { FaEllipsisH, FaRegUserCircle } from "react-icons/fa";
-import { FiPhoneCall } from "react-icons/fi";
-import { IoMdVideocam } from "react-icons/io";
-import { TiPin } from "react-icons/ti";
 import { useEffect, useRef, useState } from 'react';
-import { MdModeEdit } from 'react-icons/md';
+import { useParams } from 'react-router-dom'
+
+import { useQuery } from '@tanstack/react-query';
+import { fetchDirectChannel } from '../query/serverQueries';
+import MessagesComponent from '../components/MessagesComponent';
+
+import { FaEllipsisH } from "react-icons/fa";
 import { Tooltip } from 'react-tooltip';
 import { RiArrowRightSLine } from "react-icons/ri";
-import { getConvoByUser } from '../utils/DummyData';
-import { BsArrow90DegLeft, BsArrow90DegRight } from 'react-icons/bs';
 import { CgClose } from 'react-icons/cg'
+
+import type { ServerUser } from '../types/User';
+import { convertObj } from '../utils/ConvertedObject';
+import type { NotificationPayload } from '../types/ServerTypes';
+import { useWebSocketContext } from '../context/WebSocketContext';
 
 const DirectMessage = () => {
 
-  const {username} = useParams()
+  const { directChannelId } = useParams()
+  const { socketConnection } = useWebSocketContext();
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showUserDetails, setShowUserDetails] = useState<boolean>(false)
   const [hideMutualServer, setHideMutualServer] = useState<boolean>(false)
 
   const [img, setImg] = useState<string>()
 
-  const user = useCurrentUser()
-  const {getUser} = useServerContext();
+  const [currentUser] = useState<ServerUser>(() => {
+    const userObj = sessionStorage.getItem("UserObj")
+    const user = userObj ? JSON.parse(userObj) : null
+
+    if (user) return {
+      userId: user.userId,
+      displayName: user.displayname,
+      username: user.username,
+      email: user.email,
+      imgUrl: "" // will update session obj later (as of May 15 4:02pm lmao)
+    }
+
+    return {} as ServerUser
+  })
 
   const latestMessage = useRef<HTMLDivElement>(null)
 
-  const friendUser = getUser(username ?? "")
+
+  const { data: directChannelData, isLoading, isError: directChannelError } = useQuery({
+    ...fetchDirectChannel(directChannelId || ""),
+    enabled: !!directChannelId,
+    staleTime: 1000 * 10 * 60,
+    gcTime: 1000 * 10 * 60
+  })
+
+  const { 
+    data: notifications, 
+    isLoading: isNotificationLoading 
+  } = useQuery<NotificationPayload[]>({
+    queryKey: ["notifications-messages"],
+    queryFn: () => {return []},
+    enabled: !!socketConnection,
+    staleTime: 1000 * 5 * 60,
+    gcTime: 1000 * 5 * 60
+  }) 
+
+  console.log("Direct Channel Data: ", directChannelData)
+  const friendUser = directChannelData?.data?.
+    directChannelParticipants.find((userData: ServerUser) => userData.userId !== currentUser?.userId)
+
+  console.log("mi amigo", friendUser)
+  console.log(currentUser)
 
   // on channel change, automatically position view to latest message of channel
   const scrollToBottom = () => {
     latestMessage.current?.scrollIntoView({ behavior: "auto" }); 
   };
-
-
-  const directMessages = getConvoByUser(friendUser.user) || [];
+ 
 
   useEffect(() => {
     scrollToBottom()
-  }, [username, directMessages.length])
+  }, [directChannelId])
+
+
 
   const sampleMutualServers = [
     {
@@ -55,302 +94,81 @@ const DirectMessage = () => {
       name: "The Zone",
       serverIcon: "https://api.dicebear.com/9.x/shapes/svg?seed=Felix"
     },
-    {
-      name: "FC Barcelona Champions League Winners 25/26",
-      serverIcon: "https://api.dicebear.com/9.x/thumbs/svg?seed=Felix"
-    },
   ]
 
-  console.log(user)
-  return (
-    <div className='w-full bg-[#23272a] flex flex-col flex-1
-    text-white h-screen overflow-hidden'>
-
-
-      {/* DM Page Header */}
-      <div className='border-b border-[#363c41] w-full p-2.75'>
-        {/* Left side of header. User avatar and username */}
-        <div className='flex items-center justify-between gap-2'>
-          <div className='flex items-center'>
-            <div className='relative h-9 w-9'>
-              <img 
-                src={friendUser?.avatar} 
-                alt={friendUser?.userTag}
-                className='h-full w-full rounded-full bg-gray-200'
-              />
-
-              <div 
-                className={`rounded-full absolute bottom-0 right-1 h-2 w-2 
-                  ${friendUser?.status === "online" 
-                  ? "bg-green-500"
-                  : "bg-gray-500"
-                  }`}
-                ></div>
-            </div>
-            <p>{friendUser?.user || "John Doe"}</p>
-          </div>
-          
-          {/* DM options */}
-          <div>
-            <div className='flex items-center gap-2'>
-              {/* Message Icons */}
-              <div className='flex items-center gap-5'>
-                <FiPhoneCall />
-                <IoMdVideocam />
-                <TiPin />
-                <FaRegUserCircle 
-                  onClick={
-                    () => setShowUserDetails(!showUserDetails)
-                  }
-                />
-              </div>
-              
-              {/* Search bar */}
-              <div>
-                search...
-              </div>
-            </div>
-          </div>
-        </div>
+  if (isLoading){
+    return (
+      <div>
+        Loading...
       </div>
+    )
+  }
 
+  if ( directChannelError){
+    return(
+      <div>
+        Error. Please try again later
+      </div>
+    )
+  }
 
-      <div className='h-full w-full flex flex-1'>
-        
-        {/* Chat Container */}
-        <div className='overflow-hidden flex-1 flex flex-col min-h-0 w-full border-r border-[#363c41]'>
-          <div className='flex-1 overflow-y-auto  scrollbar-thin scrollbar-thumb-[#1e1f22] 
-            scrollbar-track-transparent hover:scrollbar-thumb-[#a1a1a1]'>
-            <div className="h-full flex flex-col justify-end p-4">
-              <img 
-                src={friendUser.avatar}
-                alt={friendUser.user}
-                className='h-25 w-25 rounded-full bg-gray-100' 
-              />
-              <p className="text-3xl font-bold">{friendUser.user}</p>
-              <p className="text-2xl py-2 font-medium">{friendUser.userTag}</p>
-              <p>This is the beginning of your direct message with&nbsp;
-                <span className='font-bold'>{friendUser.user}</span>.
-              </p>
-            
-              {/* Showing if theres mutual servers / User btn options */}
-              <div>
-                <button></button>
+  return (
+    <div className='w-full h-screen flex items-center'>
+
+      <div className='grow'>
+        <MessagesComponent 
+          messageType='direct'
+          channelId={directChannelId || ""}
+          conversationDetails={convertObj(friendUser || {} as ServerUser, "direct")}
+          currentUser={currentUser}
+          userRecipientDetails={friendUser}
+          key={directChannelId || ""}
+        />
+      </div>
+      
+      <div className='flex justify-center h-full'>
+        {
+          showUserDetails && (
+            <div className='w-80 h-full bg-[#232428]'>
+              <div className='relative'>
+                <div className='h-25 bg-blue-500 w-full'></div>
+
+                <FaEllipsisH 
+                  data-tooltip-id="more-user"
+                  data-tooltip-content="More"
+                  className="absolute top-2 right-2 text-black 
+                  bg-white/50 rounded-full text-2xl p-1 
+                  cursor-pointer focus:outline-0"
+                />
+                <Tooltip id="more-user" place="left" className="z-50"/>
               </div>
-              <button 
-                type="button"
-                className="bg-[#383a40] hover:bg-[#2e3035] text-white w-35 
-                flex items-center justify-center gap-2
-                my-2 py-2 rounded-lg cursor-pointer">
-                <MdModeEdit />
-                Edit Channel
-              </button>
-            </div>
-            
-            {/* If statement: img render. else statement: text render */}
-            <div>
 
-              {
-                directMessages.map((message) => {
-                  if (message.contentWithImg){
-                    return (
+              <div className='relative'>
+                <img 
+                  src={friendUser.avatar} 
+                  alt={friendUser.userTag}
+                  className='w-26 h-26 rounded-full bg-gray-500 ml-2 -mt-12 
+                  border-6 border-[#232428]' 
+                />
 
-                      // IMG CONTENT RENDER
-                      <div
-                        key={message.id}
-                        className='py-2 flex group relative'
-                        >
-                          <div className='flex items-start gap-2 
-                          group-hover:bg-white/10 w-full px-4 py-1'>
-                            <div className="relative">
-                              <img 
-                                src={message.avatar} 
-                                alt={message.user} 
-                                className="w-12 h-12 rounded-full bg-gray-500" 
-                              />
-
-                              {/* member status */}
-                              <span className="bg-green-400 h-2 w-2 absolute bottom-0 
-                              left-9 rounded-full"></span>
-                            </div>
-                            
-
-                            <div className="pl-2">
-                              <p className="text-white">
-                                <span className="font-semibold">{message.user}</span> &nbsp;
-                                <span className="font-light">{message.timestamp}</span>
-                              </p>
-                              <img 
-                                src={message.content} 
-                                alt={message.user} 
-                                className='max-h-160 max-w-160 pt-2 cursor-pointer'
-                                onClick={() => setImg(message.content)}
-                              />
-                            </div>
-                          </div>
-                          <div className="absolute top-0 right-4 bg-[#2B2D31] 
-                            text-lg flex items-center gap-2 p-1 opacity-0 
-                            group-hover:opacity-100 rounded-md shadow-2xl">
-      
-                            <BsArrow90DegLeft 
-                              data-tooltip-id="message-reply"
-                              data-tooltip-content="Reply"
-                              className="cursor-pointer p-0.5 
-                              hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                            />
-                            <BsArrow90DegRight 
-                              data-tooltip-id="message-forward"
-                              data-tooltip-content="Forward"
-                              className="cursor-pointer p-0.5 
-                              hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                            />
-                            <FaEllipsisH 
-                              data-tooltip-id="message-more"
-                              data-tooltip-content="More"
-                              className="cursor-pointer p-0.5 
-                              hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                            />
-                          </div>
-      
-                          <Tooltip id="message-reply" place="top" className="z-50"/>
-                          <Tooltip id="message-forward" place="top" className="z-50"/>
-                          <Tooltip id="message-more" place="top" className="z-50"/>
-                          
-                      </div>
-                    )
-                  } else {
-                    return (
-
-                      // TEXT CONTENT RENDER
-                      <div 
-                        key={message.id}
-                        className='py-2 flex group relative'>
-
-                          <div className='flex items-center gap-2 
-                          group-hover:bg-white/10 w-full px-4 py-1'>
-                            <div className="relative">
-                              <img 
-                                src={message.avatar} 
-                                alt={message.user} 
-                                className="w-12 h-12 rounded-full bg-gray-500" 
-                              />
-
-                              {/* member status */}
-                              <span className="bg-green-400 h-2 w-2 absolute bottom-0 
-                              left-9 rounded-full"></span>
-                            </div>
-                            
-
-                            <div className="pl-2">
-                              <p className="text-white">
-                                <span className="font-semibold">{message.user}</span> &nbsp;
-                                <span className="font-light">{message.timestamp}</span>
-                              </p>
-                              <p className="">{message.content}</p>
-                            </div>
-                          </div>
-
-                          <div className="absolute top-0 right-4 bg-[#2B2D31] 
-                            text-lg flex items-center gap-2 p-1 opacity-0 
-                            group-hover:opacity-100 rounded-md shadow-2xl">
-      
-                            <BsArrow90DegLeft 
-                              data-tooltip-id="message-reply"
-                              data-tooltip-content="Reply"
-                              className="cursor-pointer p-0.5 
-                              hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                            />
-                            <BsArrow90DegRight 
-                              data-tooltip-id="message-forward"
-                              data-tooltip-content="Forward"
-                              className="cursor-pointer p-0.5 
-                              hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                            />
-                            <FaEllipsisH 
-                              data-tooltip-id="message-more"
-                              data-tooltip-content="More"
-                              className="cursor-pointer p-0.5 
-                              hover:bg-[#35373C] hover:text-[#DBDEE1]"
-                            />
-                          </div>
-      
-                          <Tooltip id="message-reply" place="top" className="z-50"/>
-                          <Tooltip id="message-forward" place="top" className="z-50"/>
-                          <Tooltip id="message-more" place="top" className="z-50"/>
-                      </div>
-                    )
-                  }
-                })
-              }
-              <div ref={latestMessage}/>
-            </div>
-          </div>
-
-          <div className='p-1.5 flex-none'>
-            <div className="bg-[#383a40] rounded-lg p-2 flex items-center">
-              <input 
-                type="text" 
-                placeholder={`Message @${friendUser.userTag}`}
-                className="bg-transparent w-full p-2 py-3 focus:outline-0"
-              />
-            </div>
-          </div>
-        </div>
-        
-        {/* Friend Details */}
-        <div className='flex justify-center h-full'>
-          {
-            showUserDetails && (
-              <div className='w-80 h-full bg-[#232428]'>
-
-                <div className='relative'>
-                  <div>
-                    <div className="h-25 bg-blue-500 w-full " />
-                    <FaEllipsisH 
-                      
-                      data-tooltip-id="more-user"
-                      data-tooltip-content="More"
-                      className="absolute top-2 right-2 text-black 
-                      bg-white/50 rounded-full text-2xl p-1 
-                      cursor-pointer focus:outline-0"
-                    />
-
-                    <Tooltip id="more-user" place="left" className="z-50"/>
-                  </div>
-
-                  {/* Friend Avatar and Details */}
-                  <div className=''>
-
-                    <div className='relative'>
-                      <img 
-                      src={friendUser.avatar} 
-                      alt={friendUser.userTag}
-                      className='w-26 h-26 rounded-full bg-gray-500 ml-2 -mt-12 
-                      border-6 border-[#232428]' 
-                      />
-
-                      <div className={`rounded-full absolute bottom-1 left-20 w-6 
-                      h-6 border-6 border-[#232428] ${
-                        friendUser.status == "online" 
-                          ? "bg-green-700" 
-                          : friendUser.status == "idle" 
-                            ? "bg-yellow-500"
-                            : friendUser.status == "away"
-                              ? "bg-red-700"
-                          : "bg-gray-500"
-                      }`}>
-                      </div>
-                    </div>
-                     
-                    <div className='px-4 pt-5'>
-                      <p className='font-semibold'>{friendUser.user}</p>
-                      <p className='text-xs'>{friendUser.userTag}</p>
-                    </div>
-                    
-                  </div>
+                <div className={`rounded-full absolute bottom-1 left-20 w-6 
+                  h-6 border-6 border-[#232428] ${
+                    friendUser.status == "online" 
+                      ? "bg-green-700" 
+                      : friendUser.status == "idle" 
+                        ? "bg-yellow-500"
+                        : friendUser.status == "away"
+                          ? "bg-red-700"
+                      : "bg-gray-500"
+                  }`}>
                 </div>
+              </div>
 
-                <div className=''>
+              <div className='px-4 pt-5'>
+                <p className='font-semibold'>{friendUser.user?.displayName}</p>
+                <p className='text-xs'>{friendUser.user?.username}</p>
+              </div>
+              <div className=''>
                   <div className='bg-[#313133] p-3 m-4 rounded-lg flex flex-col items-start gap-2 cursor-default'>
                     <p className='font-bold text-xs ' >Member Since</p>
                     <p className='font-light'>{friendUser.dateJoined}</p>
@@ -389,13 +207,10 @@ const DirectMessage = () => {
                       }
                     </div>
                   )}
-                  
                 </div>
-               
-              </div>
-            )
-          }
-        </div>
+            </div>
+          )
+        }
       </div>
       {
         img && (
@@ -416,13 +231,13 @@ const DirectMessage = () => {
                       <div>
                         <img 
                           src={friendUser.avatar} 
-                          alt={friendUser.user}
+                          alt={friendUser.user?.username || ""}
                           className='h-12 w-12 rounded-full bg-white'
                         />
                       </div>
 
                       <div className='flex flex-col justify-center font-bold'>
-                        {friendUser.user}
+                        {friendUser.user?.username}
                         <p className='font-light text-gray-400'>
                           {friendUser.dateJoined}
                         </p>
