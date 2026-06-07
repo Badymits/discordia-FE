@@ -6,8 +6,10 @@ export interface Server {
   serverName: string;
   serverOwner?: User;
   serverInviteCode?: string;
-  description: string;
-  members: number; // will be removed lmao
+  createdDate?: string;
+  description?: string;
+  members?: number; // will be removed lmao
+  serverMemberCount?: number;
   serverIcon?: string;
   isAddButton?: boolean
   serverMembers?: ServerMembers[]
@@ -41,7 +43,8 @@ export interface Channel{
   channelType?: string;
   channelMembers?: ServerMembers[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  channelRoles?: any[]
+  channelRoles?: any[];
+  channelTopic?: string;
 }
 
 export interface Category {
@@ -49,7 +52,8 @@ export interface Category {
   serverName?: string;
   categoryId?: string;
   categoryName: string;
-  categoryChannels: Channel[]
+  categoryChannels: Channel[];
+  isRootFolder: boolean;
 }
 
 export interface ServerMembers {
@@ -76,26 +80,35 @@ export interface ServerMembers {
   serverMemberStatus?: ServerMemberStatus 
 }
 
-
-
-export interface Message {
-  serverId: string;
+interface BaseMessageType {
+  serverId: string | null;
   messageId?: string;
-  channelId: string;
-  userId: string;
   type: string;
+  userId: string;
 
-  userAvatar?: string; // receives url string
+  userAvatar?: string;
   displayName: string;
 
   message: string;
   repliedTo?: ReplyMessage;
   messageImgUrl?: string;
-  dateTimestamp?: string; // data type is converted in the backend
-  messageTag?: MessageTag;
+  dateTimestamp?: string;
 
   isReply: boolean;
   isContentWithImg: boolean;
+  isEdited: boolean;
+  isServerInvite: boolean;
+}
+
+export interface ServerMessage extends BaseMessageType {
+  channelId: string;
+  fileUrl?: string;
+  messages?: string;
+}
+
+export interface DirectMessage extends BaseMessageType {
+  directChannelId: string;
+  recipientId: string;
 }
 
 export interface ReplyMessage {
@@ -110,6 +123,26 @@ export interface ReplyMessage {
 export interface MessageTag { 
   user: ServerMembers;
   role: string;
+}
+
+export type PayloadServerRawMessage = Partial<ServerMessage> & {
+  repliedTo?: Partial<ReplyMessage>
+}
+
+export type PayloadDirectRawMessage = Partial<DirectMessage> & {
+  repliedTo?: Partial<ReplyMessage>
+}
+
+export type PayloadRawMessage = Partial<ServerMessage | DirectMessage> & {
+  repliedTo?: Partial<ReplyMessage>
+}
+
+export interface ConversationContext{
+  conversationName: string;
+  conversationTopic?: string;
+  userAliases?: string;
+  icon?: string | React.ReactNode;
+  userAvatar?: string;
 }
 
 export interface DirectChannel {
@@ -134,6 +167,12 @@ export interface ServerMemberStatus {
   timeOutStatus: string;
 }
 
+export interface ActiveVoiceChannel {
+  channelName: string
+  channelId: string | number;
+  serverName: string;
+}
+
 export interface MediaFormData {
   image: File,
   serverId: string,
@@ -145,6 +184,7 @@ export interface CreateChannelPayload {
   channelName: string;
   icon?: string;
   channelType: string;
+  serverId: string;
 }
 
 export interface CreateCategoryPayload {
@@ -155,4 +195,13 @@ export interface CreateCategoryPayload {
 export interface UpdateChannelPayload{
   channelName: string;
   channelTopic: string;
+}
+
+
+export interface NotificationPayload {
+  userId: string;
+  directChannelId: string;
+  displayName: string;
+  userAvatar: string;
+  unreadMessages?: number;
 }
