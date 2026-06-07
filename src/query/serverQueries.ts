@@ -7,7 +7,9 @@ import {
   getServersByUserId, 
   getUser,
   getUsers,
-  getDirectChannels
+  getDirectChannels,
+  getDirectChannel,
+  getDirectMessages
 } from "../services/serverService";
 
 export const fetchUser = (userId: string) => {
@@ -28,6 +30,20 @@ export const fetchDirectChannels = (userId: string) => {
 	return queryOptions({
 		queryKey: ["directChannels", userId],
 		queryFn: () => getDirectChannels(userId)
+	})
+}
+
+export const fetchDirectChannel = (directChannelId: string) => {
+	return queryOptions({
+		queryKey: ["directChannelData", directChannelId],
+		queryFn: () => getDirectChannel(directChannelId)
+	})
+}
+
+export const fetchDirectMessages = (directChannelId: string) => {
+	return queryOptions({
+		queryKey: ["directChannelMessages", directChannelId],
+		queryFn: () => getDirectMessages(directChannelId).then(res => res.data)
 	})
 }
 
@@ -64,7 +80,7 @@ export const fetchMessages = (channelId: string) => {
   return queryOptions({
     queryKey: ["channelMessages", channelId],
     queryFn: () => getServerMessagesByChannelId(channelId)
-    .then(res => res.data)
+    .then(res => res.data) 
   })
 }
 
