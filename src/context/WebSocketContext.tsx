@@ -1,15 +1,18 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect } from "react";
-import { useWebSocketService, type SubscriptionCallback } from "../services/webSocketService";
+import { createContext, useContext, useEffect, useRef, useState} from "react";
+import { useWebSocketService, type NotificationCallback, type SubscriptionCallback } from "../services/webSocketService";
 import { useCurrentUser } from "./UserContext";
 import type { Message } from "../types/ServerTypes";
 
 interface WebSocketContextType {
-  sample: string;
   send: (destination: string, body: Message) => void;
-  subscribe: (destination: string, callback: SubscriptionCallback) => void;
+  connect: () => void;
+  subscribe: (destination: string, callback: SubscriptionCallback | NotificationCallback) => void;
   unsubscribe: (destination: string) => void;
+  disconnect: () => void;
   isConnected: React.RefObject<boolean>;
+  setActiveRoom: React.Dispatch<React.SetStateAction<{roomId: string, roomType: "server" | "direct"} | null>>;
+  socketConnection: boolean
 }
 
 interface WebSocketContextProps{
@@ -21,6 +24,10 @@ const WebSocketContext = createContext<WebSocketContextType | null>(null);
 export const WebSocketProvider = ({children}: WebSocketContextProps) => {
 
   const { user } = useCurrentUser();
+
+  const [socketConnection, setSocketConnection] = useState<boolean>(false)
+  const [activeRoom, setActiveRoom] = useState<{roomId: string, roomType: "server" | "direct"} | null>(null)
+  
   const webSocketUrl = 'http://localhost:8091/ws';
   const {
     connect,
@@ -31,10 +38,22 @@ export const WebSocketProvider = ({children}: WebSocketContextProps) => {
     isConnected
   } = useWebSocketService(
     webSocketUrl,
-    () => console.log("Connected!"),
-    (error) => console.error("Websocket error: ", error)
+    () => {
+      console.log("Connection Successful! happy chatting!")
+      setSocketConnection(true)
+    },
+    (error) => {
+      console.error("Websocket error: ", error)
+      setSocketConnection(false)
+    }
   )
 
+  const queryKeyRef = useRef<string>(null)
+  queryKeyRef.current = activeRoom?.roomType === "server" ? "channelMessages" : "directChannelMessages"
+
+  const queryIdRef = useRef<string>(null)
+  queryIdRef.current = activeRoom?.roomId || ""
+  
   useEffect(() => {
     if (!user){
       console.log("User is offline")
@@ -44,23 +63,26 @@ export const WebSocketProvider = ({children}: WebSocketContextProps) => {
     console.log("User is now online!")
 
     connect();
+    //setSocketConnection(true)
 
     return () => {
       disconnect();
+      setSocketConnection(false)
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
 
-  const sample = ""
-
   const data = {
-    sample: sample,
     send: send,
+    connect: connect,
     subscribe: subscribe,
     unsubscribe: unsubscribe,
-    isConnected: isConnected
+    disconnect: disconnect,
+    isConnected: isConnected,
+    setActiveRoom: setActiveRoom,
+    socketConnection: socketConnection
   }
 
   return <WebSocketContext.Provider value={data}>
