@@ -1,6 +1,6 @@
 
-import { IoCloseCircleOutline } from 'react-icons/io5';
-import { Link } from 'react-router-dom';
+import { IoAdd, IoCloseCircleOutline } from 'react-icons/io5';
+import { Link, useParams } from 'react-router-dom';
 import { useServerContext } from '../context/ServerContext';
 import type {
   DirectChannel,
@@ -9,13 +9,37 @@ import type {
 import { useState } from 'react';
 import type { ServerUser } from '../types/User';
 import { useQuery } from '@tanstack/react-query';
-import { fetchDirectChannels } from '../query/serverQueries';
-import { BsDiscord } from 'react-icons/bs';
+import {  fetchDirectChannels } from '../query/serverQueries';
 
+import { BsDiscord } from 'react-icons/bs';
+import { CgHello } from "react-icons/cg";
+import { FaShop } from "react-icons/fa6";
+import { SiTurbo } from "react-icons/si";
+
+
+const MainPageMenu = [
+  {
+    name: "Friends",
+    icon: <CgHello />
+  },
+  {
+    name: "Nitro",
+    icon: <SiTurbo />
+  },
+  {
+    name: "Shop",
+    icon: <FaShop />
+  },
+]
 
 const DmAndChannelComp = () => {
 
   const {sampleUsers}  = useServerContext();
+  const {directChannelId, serverId} = useParams();
+
+  const [activeMainPageMenu, setActiveMainPageMenu] = useState<number | undefined>(
+    directChannelId || serverId ? undefined : 0
+  )
 
   const [currentUser] = useState<ServerUser>(() => {
   
@@ -39,17 +63,54 @@ const DmAndChannelComp = () => {
   })
 
   console.log(directChannels)
+  console.log(activeMainPageMenu)
 
   if (isLoading){
     return (
-      <div>We'll be back</div>
+      <div className='shrink-0 w-70 bg-[#111113] border-x border-[#363c41] text-white '>
+        {/* Search bar Loader */}
+        <div>
+          <div className='bg-[#2c2f33] p-2 m-3 animate-pulse rounded-md h-8 '></div>
+          <hr className='border-[#363c41] '/>
+
+          {/* Main Page Menu Loader */}
+          <div>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className='h-6 bg-[#2c2f33] rounded-md animate-pulse mx-3 my-4 py-4 '></div>
+            ))}
+          </div>
+          <hr className='border-[#363c41]  mx-2'/>
+        </div>
+        
+        
+        {/* Direct Messages List Loader */}
+        <div className='m-2'>
+          <div className='flex items-center justify-between'>
+            <p className='text-xs text-gray-400'>Direct Messages</p>
+            <IoAdd />
+          </div>
+          
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className='flex items-center gap-2 my-6 animate-pulse'>
+              {/* Avatar */}
+              <div className='h-8 w-8 rounded-full bg-gray-600'></div>
+
+              <div>
+                <div className='h-4 w-30 rounded-md bg-[#2c2f33]'></div>
+                <div className='h-4 w-15 bg-[#2c2f33] rounded-md mt-2'></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
     )
   }
 
 
   return (
     <div className='bg-[#111113] shrink-0 w-70 text-white 
-    border-x border-[#363c41] h-full'>
+    border-x border-[#363c41] h-full '>
 
       {/* Search bar */}
       <div>
@@ -57,12 +118,31 @@ const DmAndChannelComp = () => {
         rounded-md cursor-pointer truncate'> 
         Find or Start a conversation 
         </div>
-        <hr className='border border-[#363c41]'></hr>
+        <hr className='border border-[#363c41] mb-1'></hr>
       </div>
 
-      <div className='overflow-y-auto h-210 scrollbar-thin
-      scrollbar-thumb-[#99AAB5] scrollbar-track-transparent'>
+      <div className='overflow-y-auto h-190 scrollbar-thin
+      scrollbar-thumb-[#99AAB5] scrollbar-track-transparent px-1'>
+        {/* Home Page Menu */}
+        {(MainPageMenu || []).map((menu, i) => (
+          <Link 
+            to={menu.name === "friends" ? "/" : "/"}
+            key={i}
+            onClick={() => setActiveMainPageMenu(i)}
+            >
+            <div className={`flex items-center gap-3 ${activeMainPageMenu === i && "bg-white/10"}
+            hover:bg-white/10 duration-100 rounded-md p-2 my-1`}>
+              {menu.icon}
+              <p>{menu.name}</p>
+            </div>
+          </Link>
+        ))}
 
+        <hr className='border-[#363c41]  mx-2 mt-2'/>
+        <div className='flex items-center justify-between mx-3 py-2'>
+          <p className='text-xs text-gray-400'>Direct Messages</p>
+          <IoAdd />
+        </div>
         {
           directChannels?.data?.map((dc: DirectChannel, i:number) => {
 
@@ -75,12 +155,15 @@ const DmAndChannelComp = () => {
               <Link
                 to={`/messages/${dc.directChannelId}`}
                 key={i}
-                className='flex items-center justify-between p-2 m-1  
-                  rounded-md cursor-pointer hover:bg-[#444649] truncate'
+                className={`flex items-center justify-between p-2 mx-2 my-1  
+                  rounded-md cursor-pointer hover:bg-[#444649] truncate
+                  ${directChannelId === dc.directChannelId && "bg-white/20"}
+                  `}
+                onClick={() => setActiveMainPageMenu(undefined)}
                 >
                 <div className='flex items-center justify-center gap-2 '>
                     <div className='bg-gray-400 h-10 w-10 rounded-full relative'>
-                      <div>
+                      <div className='h-full'>
                         {
                           recipient.imgUrl ?
                           <img 
@@ -91,20 +174,6 @@ const DmAndChannelComp = () => {
                           : <BsDiscord className='h-full w-full bg-indigo-500 rounded-full p-1'/>
                         }
                       </div>
-                      
-                      
-                      {/* <div className={`
-                        ${user.status == "online" 
-                          ? "bg-green-700" 
-                          : user.status == "idle" 
-                            ? "bg-yellow-500"
-                            : user.status == "away"
-                              ? "bg-red-700"
-                          : "bg-gray-500"
-                        } h-3 w-3 absolute 
-                        right-0 bottom-0 rounded-full`}>
-                      
-                      </div> */}
                   </div>
 
                   <div className='truncate w-30'>
@@ -148,7 +217,7 @@ const DmAndChannelComp = () => {
               </div>
 
               <div className='truncate w-30'>
-                <p>{user.user}</p>
+                <p>{user.displayName}</p>
                 <p >{user.bio}</p>
               </div>
 
