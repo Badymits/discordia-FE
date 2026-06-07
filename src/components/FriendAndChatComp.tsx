@@ -9,6 +9,7 @@ import SearchUsersListLoader from './LoadingComponents/SearchUsersListLoader';
 import { BsDiscord } from 'react-icons/bs';
 import { createDirectChannel, getUsers } from '../services/serverService';
 import { useNavigate } from 'react-router-dom';
+import type { DirectChannel } from '../types/ServerTypes';
 
 interface DirectMessage {
   active: boolean;
@@ -196,11 +197,39 @@ const SearchFriendListComponent = () => {
   } = useMutation({
     mutationKey: ["createDirectMessage"],
     mutationFn: async (participants: ServerUser[]) => 
-      await createDirectChannel(participants),
+      await createDirectChannel(participants, currentUser.userId || ""),
+
+    onMutate: async (channelParticipants) => {
+      await queryClient.cancelQueries({queryKey: ["directChannels", currentUser?.userId]})
+
+      const channels = queryClient.getQueryData(["directChannels", currentUser?.userId])
+
+      console.log(channels)
+
+      if (channels){
+        queryClient.setQueryData(["directChannels", currentUser?.userId], (channelsList: DirectChannel[]) => {
+
+          console.log("the list: ")
+          if (channelsList.length === 0) {
+            const newDirectChannel: Partial<DirectChannel> = {
+              directChannelParticipants: channelParticipants
+            } 
+
+            return [newDirectChannel]
+          } else {
+            const newDirectChannel: Partial<DirectChannel> ={
+              directChannelParticipants: channelParticipants
+            }
+            return [channelsList, {newDirectChannel}]
+          }
+        })
+      }
+
+      return {channels}
+    },
 
     onError: (error)  => {
       console.error(error)
-
     },
 
     onSuccess: (response) => {
@@ -213,6 +242,8 @@ const SearchFriendListComponent = () => {
       // check current user's profile... 
       // if "recipient" is other user then use their name in the URL
 
+      queryClient.invalidateQueries({queryKey: ["directChannels", currentUser?.userId]})
+      
       setSearchTerm("")
       navigate(`/messages/${response?.data.directChannelId}`)
     }
