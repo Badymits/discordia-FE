@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { createContext, useContext, useState} from "react";
 import type { User } from "../types/User";
+import type { ActiveVoiceChannel } from "../types/ServerTypes";
 //import { useNavigate, useLocation } from "react-router-dom";
 
 
@@ -12,11 +13,6 @@ interface UserContextType{
   setJoinedVoiceChannel: React.Dispatch<React.SetStateAction<ActiveVoiceChannel>>
 }
 
-interface ActiveVoiceChannel {
-  channelName: string
-  channelId: string | number;
-  serverName: string;
-}
 
 const UserContext = createContext<UserContextType | null>(null);
 
