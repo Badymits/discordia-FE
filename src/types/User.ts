@@ -22,7 +22,7 @@ export interface ServerUser{
 
 
 export interface UserPayload{
-  UserId: string;
+  userId: string;
   displayName: string;
   username: string;
   userBio: string;
