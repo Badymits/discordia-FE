@@ -23,6 +23,7 @@ import {
 } from 'lexical';
 import { updateChannel } from '../../services/serverService';
 import type { Channel, UpdateChannelPayload } from '../../types/ServerTypes';
+import { useParams } from 'react-router-dom';
 
 
 interface Props {
@@ -87,8 +88,8 @@ const ToolbarPlugin = () => {
       <button
         onClick={() => {
           setTextOptionActive(prev => ({
-            ...prev, // Kopyahin lahat ng existing values (I, U)
-            "B": !prev.B // I-toggle lang si B
+            ...prev, // Copies existing values (I, U)
+            "B": !prev.B // Toggles only B
           }));
           onClick('bold')
         }}
@@ -100,8 +101,8 @@ const ToolbarPlugin = () => {
       <button
         onClick={() =>{
           setTextOptionActive(prev => ({
-            ...prev, // Kopyahin lahat ng existing values (I, U)
-            "I": !prev.I // I-toggle lang si B
+            ...prev, 
+            "I": !prev.I 
           }));
           onClick('italic')
         }}
@@ -140,6 +141,7 @@ const ResetText = ({editorRef}: {editorRef: React.MutableRefObject<LexicalEditor
 const ChannelOverview = ({channelId, setChannelNameState}: Props) => {
 
   const queryClient = useQueryClient();
+  const { serverId } = useParams();
 
   // For lexical text editor
   const initialConfig = {
@@ -173,7 +175,7 @@ const ChannelOverview = ({channelId, setChannelNameState}: Props) => {
   } = useMutation({
     mutationKey: ['updateChannel'],
     mutationFn: async (channelData: UpdateChannelPayload) => 
-      await updateChannel(channelData, channelId),
+      await updateChannel(channelData, channelId, serverId || ""),
 
     onMutate: async (updateChannelData) => {
       await queryClient.cancelQueries({ queryKey: ["channel", selectedChannel?.channelId]})
@@ -308,7 +310,7 @@ const ChannelOverview = ({channelId, setChannelNameState}: Props) => {
                 onChange={() => setHasChanges(true)}
               />
             }
-            // DITO DAPAT ANG PLACEHOLDER
+            // Placeholder can only be placed (most recommended) within the RichText plugin
             placeholder={
               <div className='absolute top-20 left-3 text-gray-400 pointer-events-none'> 
 
@@ -324,7 +326,7 @@ const ChannelOverview = ({channelId, setChannelNameState}: Props) => {
             ErrorBoundary={LexicalErrorBoundary}
           />
 
-          {/* Huwag kalimutan ang HistoryPlugin para gumana ang undo/redo */}
+          {/*  HistoryPlugin for undo/redo functionality */}
           <HistoryPlugin /> 
           <OnChangePlugin 
             onChange={(editorState) => {
@@ -333,8 +335,6 @@ const ChannelOverview = ({channelId, setChannelNameState}: Props) => {
                 const root = $getRoot();
                 const text = root.getTextContent();
                 setChannelTopic(text)
-                
-
               })
               setHasChanges(true)
             }}

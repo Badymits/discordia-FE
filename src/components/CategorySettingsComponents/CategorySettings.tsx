@@ -35,7 +35,7 @@ const MasterSettingsLayout = ({
     isPending
   } = useMutation({
     mutationKey: ["updateCategory"],
-    mutationFn: async (categoryName: string) => await updateCategory(categoryName, categoryId),
+    mutationFn: async (categoryName: string) => await updateCategory(categoryName, categoryId, serverId || ""),
     onMutate: async(categoryData) => {
 
       await queryClient.cancelQueries({queryKey: ["serverChannels", serverId]})
@@ -82,7 +82,7 @@ const MasterSettingsLayout = ({
     mutate: deleteCategoryMutation,
   } = useMutation({
     mutationKey: ["deleteCategory"],
-    mutationFn: async (categoryId: string) => await deleteCategory(categoryId),
+    mutationFn: async (categoryId: string) => await deleteCategory(categoryId, serverId || ""),
     
     onMutate: async () => {
       await queryClient.cancelQueries({queryKey: ["serverChannels", serverId]})

@@ -7,6 +7,7 @@ import { HiHashtag, HiLockClosed } from "react-icons/hi";
 import { FaSearch } from "react-icons/fa";
 import { PiWarningCircleFill } from "react-icons/pi";
 import type { Channel, ServerMembers } from "../types/ServerTypes";
+import { useParams } from "react-router-dom";
 
 
 
@@ -24,6 +25,8 @@ const InviteToServer = ({
   serverName,
   serverCode
 }: InviteToServerProps ) => {
+
+  const { serverId } = useParams();
 
   const combinedMembers: ServerMembers[] = useMemo(() => [
     {
@@ -249,7 +252,7 @@ const InviteToServer = ({
                   disabled:opacity-60 disabled:pointer-events-none"
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    `https://discord.gg/${serverCode}`
+                    `https://discord.gg/${serverCode}::${serverId || ""}`
                   )
                   setTextCopied(true)
                 }}
