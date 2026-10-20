@@ -4,6 +4,7 @@ import { IoIosCloseCircleOutline } from "react-icons/io";
 import {  RiDeleteBinLine  } from "react-icons/ri";
 import ServerProfile from "../ServerSettingsComponents/ServerProfile";
 import ServerTag from "../ServerSettingsComponents/ServerTag";
+import Engagement from "../ServerSettingsComponents/Engagement";
 
 interface ServerSettingsProps{
   closeModal: () => void;
@@ -12,7 +13,8 @@ interface ServerSettingsProps{
 
 const TAB_COMPONENTS: Record<string, React.ReactNode> = {
   profile: <ServerProfile />,
-  serverTag: <ServerTag />
+  serverTag: <ServerTag />,
+  engagement: <Engagement />
 }
 
 const ServerSettings = ({
@@ -37,6 +39,12 @@ const ServerSettings = ({
           id: 102,
           name: "Server Tag",
           tabCode: "serverTag",
+          icon: ""
+        },
+        {
+          id: 116,
+          name: "Engagement",
+          tabCode: "engagement",
           icon: ""
         }
       ]
@@ -188,7 +196,8 @@ const ServerSettings = ({
         </div>
       </div>
 
-      <div className="text-white p-5 col-span-15 ">
+      <div className="text-white p-5 col-span-15 overflow-auto scrollbar-thin scrollbar-thumb-[#1e1f22] 
+        scrollbar-track-transparent hover:scrollbar-thumb-[#a1a1a1]">
         {TAB_COMPONENTS[selectedTabCode] }
       </div>
     </div>

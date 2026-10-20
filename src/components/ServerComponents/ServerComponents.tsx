@@ -24,7 +24,7 @@ import CreateCategoryModal from "./CreateCategoryModal";
 import type { 
   Category, 
   Channel, 
-  ServerMembers, 
+  ServerMember, 
 } from "../../types/ServerTypes";
 
 import { useCurrentUser } from "../../context/UserContext";
@@ -154,7 +154,7 @@ const ServerComponents = () => {
       RAW_DATA: serverChannels
   });
 
-  const [serverMemberDetails, setServerMemberDetails] = useState<ServerMembers>({
+  const [serverMemberDetails, setServerMemberDetails] = useState<ServerMember>({
     memberId: "",
     serverNickname: "",
     displayName: "",
@@ -187,7 +187,7 @@ const ServerComponents = () => {
   })
 
   const [sampleVoiceChannelMembers, 
-    setSampleVoiceChannelMembers] = useState<ServerMembers[]>(voiceChannelMembers)
+    setSampleVoiceChannelMembers] = useState<ServerMember[]>(voiceChannelMembers)
 
   const createChannelRef = useRef<HTMLDivElement>(null)
   const latestMessage = useRef<HTMLDivElement>(null)
@@ -510,6 +510,8 @@ const ServerComponents = () => {
               <div key={i}>
                 <div className="relative">
 
+                  {list.isRootFolder}
+
                   {/* Category Settings Panel */}
                   {
                     showCategorySettings && (
@@ -758,7 +760,7 @@ const ServerComponents = () => {
             </p>
             
             {
-              (serverChannels?.serverMembers || []).map((member: ServerMembers) => (
+              (serverChannels?.serverMembers || []).map((member: ServerMember) => (
                 <div 
                   key={member.memberId}
                   >

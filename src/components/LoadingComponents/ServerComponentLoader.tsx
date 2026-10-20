@@ -30,16 +30,16 @@ const ServerComponentLoader = () => {
             <div className="py-6 mb-8 border-b border-[#363c41]"></div>
 
             <div className="w-200">
-              <div className="flex-1 flex flex-col w-full min-h-0 mb-auto overflow-hidden">
+              <div className="flex-1 flex flex-col min-h-0 mb-auto overflow-hidden">
                 {[...Array(5)].map((_, i) => (
                     <div key={i} className="mb-7">
                       <div className="flex">
                         <div className="h-10 w-12 rounded-full bg-[#202024]"></div>
-                        <div className="h-5 bg-[#202024] my-2 w-full animate-pulse gap-2 ml-1  rounded-md"></div>
+                        <div className="h-5 bg-[#202024] my-2 w-40 animate-pulse gap-2 ml-1  rounded-md"></div>
                       </div>
                       
                       {[...Array(2)].map((_, index) => (
-                        <div key={index} className="h-7 bg-[#202024] my-2 animate-pulse gap-2 ml-15 rounded-md"></div>
+                        <div key={index} className="h-7 bg-[#202024] my-2 animate-pulse gap-2 ml-15 w-70 rounded-md"></div>
                       ))}
                     </div>
                   ))}

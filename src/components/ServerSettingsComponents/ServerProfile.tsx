@@ -432,7 +432,7 @@ const ServerProfile = () => {
                     background={false}
                     zoomOnWheel={false}
                     ready={() => {
-                      // Dito mo tawagin ang zoom pag selyadong "ready" na ang width/height
+                      // Calls the zoom when height/width is ready
                       const cropper = cropperRef.current?.cropper;
                       if (cropper) {
                         cropper.zoomTo(0.5); 

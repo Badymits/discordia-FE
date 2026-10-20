@@ -4,19 +4,16 @@ import {
   serverMembers as serverMembersData, 
   serverTwoMembers, 
 } from "../utils/DummyData";
-import type { Category, Server, ServerMembers } from "../types/ServerTypes";
+import type { Category, Server, ServerMember } from "../types/ServerTypes";
 
 
 interface ServerContextType {
   server: Server | null;
   setServer: React.Dispatch<React.SetStateAction<Server | null>>; // refers to current active server
-  sampleUsers: ServerMembers[];
-  getUser: (userTag: string) => ServerMembers; // return server member object
+  sampleUsers: ServerMember[];
   servers: Server[];
-  serverMembers: ServerMembers[];
   currentServerChannels: Category[];
   setServers: React.Dispatch<React.SetStateAction<Server[]>>;
-  setServerMembers: React.Dispatch<React.SetStateAction<ServerMembers[]>>;
   setCurrentServerChannels: React.Dispatch<React.SetStateAction<Category[]>>;
 }
 
@@ -35,7 +32,7 @@ export const ServerProvider = (
   // holds details of the server that the user is viewing
   const [server, setServer] = useState<Server | null>(null)
 
-  const sampleUsers: ServerMembers[] = [
+  const sampleUsers: ServerMember[] = [
     ...serverMembersData, 
     ...serverTwoMembers,
     {
@@ -200,26 +197,11 @@ export const ServerProvider = (
     }
   )
 
-  // holds list of members that the server has
-  const [serverMembers, setServermembers] = useState<ServerMembers[]>(
-    () => {
-      const storedCurrentServerMembers = sessionStorage.getItem("currentServerMembers")
-      console.log("stored current server members: ", storedCurrentServerMembers)
-      return storedCurrentServerMembers ? JSON.parse(storedCurrentServerMembers) as ServerMembers[] : []
-    }
-  )
-
-  const getUser = (userTag: string) => {
-    return sampleUsers.find(user => user.userTag === userTag) || sampleUsers[0]
-  }
 
   const serverContextData = {
     server: server,
-    serverMembers: serverMembers,
-    setServerMembers: setServermembers,
     setServer: setServer,
     sampleUsers: sampleUsers,
-    getUser: getUser,
     serverList: serverListMemo,
     servers: servers,
     setServers: setServers,

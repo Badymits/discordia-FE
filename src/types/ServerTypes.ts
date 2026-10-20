@@ -2,7 +2,7 @@ import type { UUIDTypes } from "uuid";
 import type { ServerUser, User } from "./User";
 
 export interface Server {
-  serverId: number | string;
+  serverId: string;
   serverName: string;
   serverOwner?: User;
   serverInviteCode?: string;
@@ -12,7 +12,7 @@ export interface Server {
   serverMemberCount?: number;
   serverIcon?: string;
   isAddButton?: boolean
-  serverMembers?: ServerMembers[]
+  serverMembers?: ServerMember[]
   serverCategories?: Category[];
 }
 
@@ -41,7 +41,7 @@ export interface Channel{
   isPrivate? :boolean;
   isNSFW?: boolean;
   channelType?: string;
-  channelMembers?: ServerMembers[]
+  channelMembers?: ServerMember[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   channelRoles?: any[];
   channelTopic?: string;
@@ -56,7 +56,7 @@ export interface Category {
   isRootFolder: boolean;
 }
 
-export interface ServerMembers {
+export interface ServerMember {
   memberId: string;
 
   user?: User;
@@ -121,7 +121,7 @@ export interface ReplyMessage {
 }
 
 export interface MessageTag { 
-  user: ServerMembers;
+  user: ServerMember;
   role: string;
 }
 
@@ -204,4 +204,16 @@ export interface NotificationPayload {
   displayName: string;
   userAvatar: string;
   unreadMessages?: number;
+}
+
+
+export interface ServerMemberPayload{
+  serverNickname: string;
+  userDetails: ServerUser
+}
+
+export interface JoinServerMutate{
+  member: ServerMemberPayload;
+  serverCode: string;
+  channelId: string;
 }

@@ -8,8 +8,9 @@ import Layout from "./components/Layout"
 import ServerComponents from "./components/ServerComponents/ServerComponents"
 import { ServerProvider } from "./context/ServerContext"
 import DirectMessage from "./pages/DirectMessage"
-import HomeLayout from "./pages/HomeLayout"
+import MainPageLayout from "./pages/MainPageLayout"
 import { WebSocketProvider } from "./context/WebSocketContext"
+import DummyServerPage from "./pages/DummyServerPage";
 
 
 function App() {
@@ -26,11 +27,11 @@ function App() {
                 <Route element={<Layout />}>
 
                   {/* When opening discord, it shows friend list and activity feed of friends. */}
-                  <Route element={<HomeLayout />}>
+                  <Route element={<MainPageLayout />}>
                     <Route index element={<Home />}/>
                     <Route path="/messages/:directChannelId" element={<DirectMessage />}/>
                   </Route>
-
+                  <Route path="/dummyserver/" element={<DummyServerPage />}/>
                   <Route path="/server/:serverName/:serverId" element={<ServerComponents />} />  
                 </Route> 
 

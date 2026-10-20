@@ -36,3 +36,15 @@
     @apply opacity-0;
   }
 }
+
+@layer utilities {
+  /* Targets direct children of body that have absolute positioning (the ghost) */
+  body > div[style*="position: absolute"] {
+    @apply hidden;
+  }
+  
+  /* Or specifically for opacity if you want to keep layout space but hide visual */
+  body > div[style*="position: absolute"] {
+    @apply opacity-0;
+  }
+}   

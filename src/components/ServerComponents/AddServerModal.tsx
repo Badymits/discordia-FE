@@ -6,7 +6,6 @@ import type {
   Category, 
   Server, 
   CreateServer,
-  ServerMembers 
 } from "../../types/ServerTypes"
 import { motion, AnimatePresence } from "framer-motion";
 import { useCurrentUser } from "../../context/UserContext";

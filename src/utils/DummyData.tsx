@@ -1,5 +1,5 @@
 import { RiHashtag } from "react-icons/ri";
-import type { Category, Messages, ServerMembers } from "../types/ServerTypes";
+import type { Category, Messages, Server, ServerMembers } from "../types/ServerTypes";
 
 
 
@@ -871,5 +871,71 @@ export const getChannelByKey = (channelName: string, serverId: number) => {
 export const getChannelsByServerID = (serverId: number) => {
   return ChannelsByServerID[serverId as keyof typeof ChannelsByServerID]
 }
+
+export const serverChannelExample: Category[] = [
+  {
+    categoryName: "",
+    categoryId: "111",
+    isRootFolder: true,
+    categoryChannels: [],
+  },
+  {
+    categoryName: "Text Channels",
+    categoryId: "112",
+    isRootFolder: false,
+    categoryChannels: [
+      {
+        channelId: "2221",
+        channelName: "general",
+        categoryId: "111",
+        icon: "hash"
+      },
+      {
+        channelId: "2222",
+        channelName: "other-channel",
+        categoryId: "111",
+        icon: "hash"
+      },
+      {
+        channelId: "2223",
+        channelName: "third",
+        categoryId: "111",
+        icon: "hash"
+      },
+    ]
+  },
+  {
+    categoryName: "Ligma Liginds",
+    categoryId: "222",
+    isRootFolder: false,
+    categoryChannels: [
+      {
+        channelId: "2224",
+        channelName: "giniral",
+        categoryId: "222",
+        icon: "hash"
+      }
+    ]
+  }
+]
+
+export const serversListExample: Server[] = [
+  {
+    serverId: "1112",
+    serverName: "Server 1",
+  },
+  {
+    serverId: "1113",
+    serverName: "Server 2",
+  },
+  {
+    serverId: "1114",
+    serverName: "Server 3",
+  },
+  {
+    serverId: "1115",
+    serverName: "Server 4",
+  },
+]
 
 

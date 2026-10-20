@@ -6,7 +6,7 @@ import type { IconType } from 'react-icons';
 import { HiHashtag, HiLockClosed } from "react-icons/hi";
 import { FaSearch } from "react-icons/fa";
 import { PiWarningCircleFill } from "react-icons/pi";
-import type { Channel, ServerMembers } from "../types/ServerTypes";
+import type { Channel, ServerMember } from "../types/ServerTypes";
 import { useParams } from "react-router-dom";
 
 
@@ -28,7 +28,7 @@ const InviteToServer = ({
 
   const { serverId } = useParams();
 
-  const combinedMembers: ServerMembers[] = useMemo(() => [
+  const combinedMembers: ServerMember[] = useMemo(() => [
     {
       memberId: "33",
       displayName: "that333",

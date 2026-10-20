@@ -18,6 +18,7 @@ export interface ServerUser{
   displayName: string;
   userBio?: string;
   imgUrl: string;
+  email?: string;
 }
 
 

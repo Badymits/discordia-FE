@@ -16,7 +16,7 @@ interface DirectMessage {
   hoursPlayed: number;
 }
 
-const ServerPage = () => {
+const MainMenuPage = () => {
 
   const [activeDM, setActiveDM] = useState(-1)
   const [activeFriendTab, setActiveFriendTab] = useState("online")
@@ -132,4 +132,4 @@ const ServerPage = () => {
   )
 }
 
-export default ServerPage
+export default MainMenuPage

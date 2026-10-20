@@ -2,6 +2,7 @@ import { http } from "./httpSetup";
 import type { 
   CreateCategoryPayload, 
   CreateChannelPayload,
+  ServerMemberPayload,
   UpdateChannelPayload, 
 } from "../types/ServerTypes";
 import type { ServerUser } from "../types/User";
@@ -69,10 +70,13 @@ export const uploadImage = async(formData: FormData, messageId: string, messageT
 }
 
 export const createDirectChannel = async(participants: ServerUser[], userId: string) => {
-  return http.post(`/direct-channel/create-direct-channel`, {
-    directChannelParticipants: participants,
-    userId: userId
+  return http.post(`/direct-channel/create-direct-channel?userId=${userId}`, {
+    directChannelParticipants: participants
   })
+}
+
+export const addMemberToServer = async(member: ServerMemberPayload, serverCode:string, channelId: string) => {
+  return http.post(`/members/add-member-server/${serverCode}?channelId=${channelId}`, member)
 }
 // =========================
 

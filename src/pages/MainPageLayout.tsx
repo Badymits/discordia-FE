@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom"
 import DmAndChannelComp from "../components/DmAndChannelComp";
 
 
-const HomeLayout = () => {
+const MainPageLayout = () => {
 
 
   return (
@@ -15,4 +15,4 @@ const HomeLayout = () => {
   )
 }
 
-export default HomeLayout
+export default MainPageLayout

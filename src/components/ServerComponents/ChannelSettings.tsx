@@ -79,7 +79,7 @@ const ChannelSettings = ({
     mutate: deleteChannelMutate
   } = useMutation({
     mutationKey: ["deleteChannel"],
-    mutationFn: async (channelId: string) =>  await deleteChannel(channelId),
+    mutationFn: async (channelId: string) =>  await deleteChannel(channelId, serverId || ""),
 
     onMutate: async () => {
       
